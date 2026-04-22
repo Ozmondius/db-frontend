@@ -274,6 +274,71 @@
             color: #999;
             font-size: 1.1em;
         }
+
+        .spawn-tools {
+            margin-top: 20px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-left: 4px solid #D4AF37;
+            border-radius: 6px;
+            background: #fcfcfc;
+        }
+
+        .spawn-tools h3 {
+            margin-bottom: 12px;
+            color: #8B4513;
+        }
+
+        .spawn-tools-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .spawn-tools select,
+        .spawn-tools button {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .spawn-tools button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .spawn-tools button:hover {
+            border-color: #8B4513;
+        }
+
+        #spawn-preview {
+            width: 100%;
+            max-width: 620px;
+            height: auto;
+            border: 1px solid #bbb;
+            background: #161616;
+            display: block;
+        }
+
+        .spawn-meta {
+            margin: 8px 0 10px 0;
+            color: #555;
+            font-size: 0.92em;
+        }
+
+        .spawn-command {
+            margin-top: 8px;
+            background: #111;
+            color: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: Consolas, monospace;
+            font-size: 0.85em;
+        }
         
         footer {
             background: #1a1a1a;
@@ -400,6 +465,19 @@
             </div>
             
             <div id="results-container" style="margin-top: 30px;"></div>
+
+            <div id="spawn-tools" class="spawn-tools" style="display:none;">
+                <h3>Spawn Map Marks Export</h3>
+                <div class="spawn-tools-row">
+                    <label for="export-map-select"><strong>Map:</strong></label>
+                    <select id="export-map-select"></select>
+                    <button type="button" onclick="downloadCurrentElm()">Download .elm.txt</button>
+                    <button type="button" onclick="copyExportCommand()">Copy Python Export Command</button>
+                </div>
+                <div id="spawn-preview-meta" class="spawn-meta"></div>
+                <canvas id="spawn-preview" width="620" height="620"></canvas>
+                <div id="spawn-command" class="spawn-command"></div>
+            </div>
         </div>
     </div>
     
@@ -411,6 +489,8 @@
         // Load data from CSV-like data embedded or fetched
         let creaturesData = [];
         let harvestablesData = [];
+        let currentResultRows = [];
+        let currentQueryType = 'creatures';
 
         // Initialize - load data on page load
         window.addEventListener('DOMContentLoaded', function() {
@@ -492,6 +572,8 @@
 
             if (queryType === 'creatures') {
                 results = filterCreatures(creatureName, mapName, continent);
+            } else if (queryType === 'creature-locations') {
+                results = filterCreatures(creatureName, mapName, continent);
             } else if (queryType === 'harvestables') {
                 results = filterHarvestables(mapName, itemName);
             }
@@ -505,6 +587,8 @@
                 results.sort((a, b) => (a.creature_name || a.item_name || '').localeCompare(b.creature_name || b.item_name || ''));
             }
 
+            currentResultRows = results;
+            currentQueryType = queryType;
             displayResults(results, queryType);
         }
 
@@ -545,7 +629,7 @@
                     html += `<tr>
                         <td>${row.creature_name}</td>
                         <td>${row.map_name}</td>
-                        <td>${row.coordinate_index || 'N/A'}</td>
+                        <td>${row.spawn_coordinates || 'N/A'}</td>
                     </tr>`;
                 });
             } else if (type === 'harvestables') {
@@ -562,6 +646,154 @@
             
             html += '</tbody></table></div>';
             container.innerHTML = html;
+            refreshSpawnTools(results, type);
+        }
+
+        function parseCoordPair(value) {
+            if (!value) return null;
+            const m = String(value).match(/\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]/);
+            if (!m) return null;
+            return { x: Number(m[1]), y: Number(m[2]) };
+        }
+
+        function buildSpawnRows(results, type) {
+            const rows = [];
+            const normalizedType = (type === 'harvestables') ? 'harvestable' : 'creature';
+            for (const row of results) {
+                const coordText = (type === 'harvestables') ? row.coordinates : row.spawn_coordinates;
+                const parsed = parseCoordPair(coordText);
+                if (!parsed) continue;
+                rows.push({
+                    map_name: row.map_name || '',
+                    point_name: (type === 'harvestables') ? (row.item_name || '') : (row.creature_name || ''),
+                    point_type: normalizedType,
+                    x: parsed.x,
+                    y: parsed.y
+                });
+            }
+            return rows;
+        }
+
+        function slugifyJs(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '') || 'map';
+        }
+
+        function getSelectedSpawnRows() {
+            const mapSelect = document.getElementById('export-map-select');
+            const selectedMap = mapSelect.value;
+            const rows = buildSpawnRows(currentResultRows, currentQueryType);
+            return rows.filter(r => r.map_name === selectedMap);
+        }
+
+        function renderSpawnPreview(rows, selectedMap) {
+            const canvas = document.getElementById('spawn-preview');
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#161616';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (!rows.length) {
+                ctx.fillStyle = '#ddd';
+                ctx.font = '16px Segoe UI';
+                ctx.fillText('No coordinate points to draw.', 18, 36);
+                return;
+            }
+
+            const minX = Math.min(...rows.map(r => r.x));
+            const maxX = Math.max(...rows.map(r => r.x));
+            const minY = Math.min(...rows.map(r => r.y));
+            const maxY = Math.max(...rows.map(r => r.y));
+            const spanX = Math.max(1, maxX - minX);
+            const spanY = Math.max(1, maxY - minY);
+            const pad = 18;
+            const drawW = canvas.width - (pad * 2);
+            const drawH = canvas.height - (pad * 2);
+
+            ctx.strokeStyle = '#555';
+            ctx.strokeRect(pad, pad, drawW, drawH);
+
+            for (const row of rows) {
+                const px = pad + ((row.x - minX) / spanX) * drawW;
+                const py = pad + (1 - ((row.y - minY) / spanY)) * drawH;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fillStyle = row.point_type === 'harvestable' ? '#00cc44' : '#ff2a2a';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.stroke();
+            }
+
+            const meta = document.getElementById('spawn-preview-meta');
+            meta.textContent = `${selectedMap} | points=${rows.length} | bounds=[${minX},${maxX}]x[${minY},${maxY}] | red=creature green=harvestable`;
+        }
+
+        function refreshSpawnTools(results, type) {
+            const panel = document.getElementById('spawn-tools');
+            const mapSelect = document.getElementById('export-map-select');
+            const command = document.getElementById('spawn-command');
+            const spawnRows = buildSpawnRows(results, type);
+
+            if (!spawnRows.length) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            const maps = [...new Set(spawnRows.map(r => r.map_name))].sort((a, b) => a.localeCompare(b));
+            mapSelect.innerHTML = maps.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            const updatePreviewAndCommand = () => {
+                const selectedMap = mapSelect.value;
+                const selectedRows = spawnRows.filter(r => r.map_name === selectedMap);
+                const q = document.getElementById('creature-name').value || document.getElementById('item-name').value || '';
+                const exportType = (type === 'harvestables') ? 'harvestable' : 'creature';
+                const cmd = `python Utilities/Export-ELDB-MapMarks.py --map "${selectedMap}" --query "${q}" --type ${exportType}`;
+                command.textContent = cmd;
+                renderSpawnPreview(selectedRows, selectedMap);
+            };
+
+            mapSelect.onchange = updatePreviewAndCommand;
+            panel.style.display = 'block';
+            updatePreviewAndCommand();
+        }
+
+        function downloadCurrentElm() {
+            const rows = getSelectedSpawnRows();
+            if (!rows.length) {
+                alert('No coordinate rows available for selected map.');
+                return;
+            }
+
+            const mapName = document.getElementById('export-map-select').value;
+            const lines = rows.map(r => {
+                const rgb = r.point_type === 'harvestable' ? '0,255,0' : '255,0,0';
+                return `${r.x} ${r.y}|${rgb}|${r.point_name}`;
+            });
+
+            const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${slugifyJs(mapName)}-${slugifyJs(currentQueryType)}.elm.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyExportCommand() {
+            const text = document.getElementById('spawn-command').textContent || '';
+            if (!text) {
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Export command copied to clipboard.');
+            }).catch(() => {
+                alert('Clipboard write failed. Copy manually from command box.');
+            });
         }
     </script>
 </body>
