@@ -120,6 +120,32 @@
             border-color: #D4AF37;
             box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
         }
+
+        .filter-input {
+            margin-bottom: 8px;
+        }
+
+        .multi-select {
+            min-height: 170px;
+            font-size: 0.92em;
+        }
+
+        .multi-select option {
+            padding: 4px 6px;
+        }
+
+        .query-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #444;
+        }
+
+        .query-checkbox input[type="checkbox"] {
+            transform: scale(1.1);
+        }
         
         .helper-text {
             font-size: 0.85em;
@@ -339,6 +365,66 @@
             font-family: Consolas, monospace;
             font-size: 0.85em;
         }
+
+        .edit-queue {
+            margin-top: 20px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-left: 4px solid #8B4513;
+            border-radius: 6px;
+            background: #fcfcfc;
+        }
+
+        .edit-queue h3 {
+            margin-bottom: 10px;
+            color: #8B4513;
+        }
+
+        .edit-queue .queue-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .edit-queue .queue-actions button {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .edit-queue .queue-actions button:hover {
+            border-color: #8B4513;
+        }
+
+        .btn-edit {
+            padding: 6px 10px;
+            border: 1px solid #8B4513;
+            border-radius: 4px;
+            background: white;
+            color: #8B4513;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .btn-edit:hover {
+            background: #8B4513;
+            color: #fff;
+        }
+
+        .queue-status {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .queue-status.pending { color: #8B4513; }
+        .queue-status.approved { color: #1a7f37; }
+        .queue-status.rejected { color: #b42318; }
         
         footer {
             background: #1a1a1a;
@@ -385,30 +471,27 @@
                 <div class="query-grid">
                     <div class="query-section">
                         <label for="creature-name">Creature Name</label>
-                        <input type="text" id="creature-name" placeholder="e.g., Rabbit, Deer, Brownie">
-                        <div class="helper-text">Search for any creature type</div>
+                        <input type="text" id="creature-filter" class="filter-input" placeholder="Type to narrow. Press Enter or comma to add.">
+                        <select id="creature-name" class="multi-select" multiple size="8"></select>
+                        <div class="helper-text">All creatures loaded. Multi-select with Ctrl+click or comma list.</div>
                     </div>
                     
                     <div class="query-section">
                         <label for="map-name">Map or Location</label>
-                        <input type="text" id="map-name" placeholder="e.g., Portland, White Stone, C1">
-                        <div class="helper-text">Partial matches work (C1, C2, Seridia, Irilion)</div>
-                    </div>
-                    
-                    <div class="query-section">
-                        <label for="continent">Continent</label>
-                        <select id="continent">
-                            <option value="">-- Any Continent --</option>
-                            <option value="Seridia">Seridia (C1)</option>
-                            <option value="Irilion">Irilion (C2)</option>
-                        </select>
-                        <div class="helper-text">Filter by continent</div>
+                        <input type="text" id="map-filter" class="filter-input" placeholder="Type to narrow maps. Enter/comma adds matches.">
+                        <select id="map-name" class="multi-select" multiple size="10"></select>
+                        <label class="query-checkbox" for="include-associated-internals">
+                            <input type="checkbox" id="include-associated-internals">
+                            Include all internal maps tied to selected main maps
+                        </label>
+                        <div class="helper-text">Top options are All, C1, C2. Then individual maps.</div>
                     </div>
                     
                     <div class="query-section">
                         <label for="item-name">Harvest Item</label>
-                        <input type="text" id="item-name" placeholder="e.g., White Asiatic Lilly">
-                        <div class="helper-text">Find locations that harvest this item</div>
+                        <input type="text" id="item-filter" class="filter-input" placeholder="Type to narrow. Press Enter or comma to add.">
+                        <select id="item-name" class="multi-select" multiple size="8"></select>
+                        <div class="helper-text">All harvestables loaded. Multi-select with Ctrl+click or comma list.</div>
                     </div>
                     
                     <div class="query-section">
@@ -477,6 +560,16 @@
                 <canvas id="spawn-preview" width="620" height="620"></canvas>
                 <div id="spawn-command" class="spawn-command"></div>
             </div>
+
+            <div id="edit-queue" class="edit-queue">
+                <h3>Pending Edit Queue (Review Before DB Apply)</h3>
+                <div class="queue-actions">
+                    <button type="button" onclick="exportPendingEditsJson()">Download Queue JSON</button>
+                    <button type="button" onclick="exportPendingEditsCsv()">Download Queue CSV</button>
+                    <button type="button" onclick="clearPendingEdits()">Clear Queue</button>
+                </div>
+                <div id="edit-queue-table"></div>
+            </div>
         </div>
     </div>
     
@@ -485,101 +578,412 @@
     </footer>
 
     <script>
-        // Load data from CSV-like data embedded or fetched
         let creaturesData = [];
         let harvestablesData = [];
+        let mapSummaryData = [];
+        let locationPagesData = [];
+        let exitGraphData = [];
+        let crosswalkData = [];
+
         let currentResultRows = [];
         let currentQueryType = 'creatures';
 
-        // Initialize - load data on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            loadCreaturesData();
-            loadHarvestablesData();
+        const selectOptionsById = {};
+        const selectedValuesById = {};
+
+        const mainMapSet = new Set();
+        const mapContinent = new Map();
+        const mainToInternals = new Map();
+        const allKnownMaps = new Set();
+
+        const PENDING_EDITS_KEY = 'eldbPendingEditsV1';
+        let pendingEdits = [];
+
+        window.addEventListener('DOMContentLoaded', async function() {
+            await loadAllData();
+            buildMapTaxonomy();
+            setupSelectors();
+            loadPendingEdits();
+            executeQuery();
         });
 
-        function loadCreaturesData() {
-            // This would typically fetch from a data source
-            // For now, using a placeholder that would be populated from eldb-creature-spawns.csv
-            fetch('eldb-creature-spawns.csv')
-                .then(response => response.text())
-                .then(data => {
-                    parseCSV(data, 'creatures');
-                })
-                .catch(err => {
-                    console.log('Note: creatures data not loaded yet. Build query with empty data.');
-                    creaturesData = [];
-                });
+        async function loadAllData() {
+            const [creatures, harvestables, mapSummary, locations, exitGraph, crosswalk] = await Promise.all([
+                fetchCsvRows('eldb-creature-spawns.csv'),
+                fetchCsvRows('eldb-harvestable-locations.csv'),
+                fetchCsvRows('eldb-map-summary.csv'),
+                fetchCsvRows('eldb-location-pages.csv'),
+                fetchCsvRows('eldb-harvestable-exit-graph-with-secrets.csv'),
+                fetchCsvRows('eldb-map-number-crosswalk.csv')
+            ]);
+
+            creaturesData = creatures;
+            harvestablesData = harvestables;
+            mapSummaryData = mapSummary;
+            locationPagesData = locations;
+            exitGraphData = exitGraph;
+            crosswalkData = crosswalk;
         }
 
-        function loadHarvestablesData() {
-            fetch('eldb-harvestable-locations.csv')
-                .then(response => response.text())
-                .then(data => {
-                    parseCSV(data, 'harvestables');
-                })
-                .catch(err => {
-                    console.log('Note: harvestables data not loaded yet.');
-                    harvestablesData = [];
-                });
-        }
-
-        function parseCSV(csv, type) {
-            const lines = csv.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            
-            for (let i = 1; i < lines.length; i++) {
-                const obj = {};
-                const currentLine = lines[i].split(',');
-                for (let j = 0; j < headers.length; j++) {
-                    obj[headers[j]] = currentLine[j] ? currentLine[j].trim().replace(/"/g, '') : '';
+        async function fetchCsvRows(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) {
+                    return [];
                 }
-                if (type === 'creatures') {
-                    creaturesData.push(obj);
-                } else if (type === 'harvestables') {
-                    harvestablesData.push(obj);
-                }
+                const text = await response.text();
+                return parseCSVRows(text);
+            } catch (err) {
+                console.log(`Note: failed loading ${path}`);
+                return [];
             }
         }
 
+        function parseCSVRows(csvText) {
+            const rows = [];
+            const lines = String(csvText || '').replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean);
+            if (!lines.length) {
+                return rows;
+            }
+
+            const headers = parseCsvLine(lines[0]);
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCsvLine(lines[i]);
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[(h || '').trim()] = (values[idx] || '').trim();
+                });
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        function parseCsvLine(line) {
+            const out = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (ch === ',' && !inQuotes) {
+                    out.push(current);
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            out.push(current);
+            return out;
+        }
+
+        function buildMapTaxonomy() {
+            for (const row of mapSummaryData) {
+                const mapName = (row.map_name || '').trim();
+                if (mapName) {
+                    mainMapSet.add(mapName);
+                }
+            }
+
+            const c1Main = new Set();
+            const c2Main = new Set();
+
+            for (const row of exitGraphData) {
+                const src = (row.source_map || row.source || '').trim();
+                const dest = (row.destination_map || row.target_map || '').trim();
+                if (!src || !dest) {
+                    continue;
+                }
+                if (src === 'Seridia Portal Room') {
+                    c1Main.add(dest);
+                } else if (src === 'Irilion Portal Room') {
+                    c2Main.add(dest);
+                }
+            }
+
+            const crosswalkByMap = new Map();
+            for (const row of crosswalkData) {
+                const mapName = (row.map_name || '').trim();
+                if (!mapName) {
+                    continue;
+                }
+                if (!crosswalkByMap.has(mapName)) {
+                    crosswalkByMap.set(mapName, []);
+                }
+                crosswalkByMap.get(mapName).push((row.tabmap_name || '').trim().toLowerCase());
+            }
+
+            for (const row of locationPagesData) {
+                const sourceMap = (row.source_map || '').trim();
+                const entryName = (row.entry_name || '').trim();
+                if (!sourceMap || !entryName || !mainMapSet.has(sourceMap) || mainMapSet.has(entryName)) {
+                    continue;
+                }
+                if (!mainToInternals.has(sourceMap)) {
+                    mainToInternals.set(sourceMap, new Set());
+                }
+                mainToInternals.get(sourceMap).add(entryName);
+            }
+
+            const parentMainsByInternal = new Map();
+            for (const [mainMap, internals] of mainToInternals.entries()) {
+                for (const internalMap of internals) {
+                    if (!parentMainsByInternal.has(internalMap)) {
+                        parentMainsByInternal.set(internalMap, new Set());
+                    }
+                    parentMainsByInternal.get(internalMap).add(mainMap);
+                }
+            }
+
+            const collectMap = (name) => {
+                const mapName = (name || '').trim();
+                if (mapName) {
+                    allKnownMaps.add(mapName);
+                }
+            };
+
+            creaturesData.forEach(r => collectMap(r.map_name));
+            harvestablesData.forEach(r => collectMap(r.map_name));
+            mapSummaryData.forEach(r => collectMap(r.map_name));
+            locationPagesData.forEach(r => {
+                collectMap(r.source_map);
+                collectMap(r.entry_name);
+            });
+
+            for (const mapName of allKnownMaps) {
+                mapContinent.set(mapName, deriveContinent(mapName, c1Main, c2Main, parentMainsByInternal, crosswalkByMap));
+            }
+        }
+
+        function deriveContinent(mapName, c1Main, c2Main, parentMainsByInternal, crosswalkByMap) {
+            if (c1Main.has(mapName) || mapName === 'Seridia Portal Room' || mapName === 'Seridia Underworld') {
+                return 'C1';
+            }
+            if (c2Main.has(mapName) || mapName === 'Irilion Portal Room' || mapName === 'Irilion Underworld') {
+                return 'C2';
+            }
+
+            const parents = parentMainsByInternal.get(mapName);
+            if (parents && parents.size) {
+                const firstParent = Array.from(parents)[0];
+                if (c1Main.has(firstParent)) {
+                    return 'C1';
+                }
+                if (c2Main.has(firstParent)) {
+                    return 'C2';
+                }
+            }
+
+            const tabmaps = crosswalkByMap.get(mapName) || [];
+            if (tabmaps.some(v => v.startsWith('cont2'))) {
+                return 'C2';
+            }
+
+            return 'C1';
+        }
+
+        function setupSelectors() {
+            bindFilterableSelect('creature-filter', 'creature-name', uniqueSorted(creaturesData.map(r => r.creature_name))
+                .map(name => ({ value: name, label: name }))
+            );
+
+            const mapOptions = [
+                { value: '__ALL__', label: 'All maps' },
+                { value: '__C1__', label: 'C1 (Seridia maps)' },
+                { value: '__C2__', label: 'C2 (Irilion maps)' },
+                ...uniqueSorted(Array.from(allKnownMaps)).map(name => ({
+                    value: name,
+                    label: `[${mapContinent.get(name) || 'C1'}] ${name}`
+                }))
+            ];
+            bindFilterableSelect('map-filter', 'map-name', mapOptions);
+
+            bindFilterableSelect('item-filter', 'item-name', uniqueSorted(harvestablesData.map(r => r.item_name))
+                .map(name => ({ value: name, label: name }))
+            );
+
+            document.getElementById('query-type').addEventListener('change', executeQuery);
+            document.getElementById('order-by').addEventListener('change', executeQuery);
+            document.getElementById('include-associated-internals').addEventListener('change', executeQuery);
+        }
+
+        function bindFilterableSelect(filterId, selectId, options) {
+            const filter = document.getElementById(filterId);
+            const select = document.getElementById(selectId);
+
+            selectOptionsById[selectId] = options;
+            selectedValuesById[selectId] = new Set();
+            renderSelectOptions(selectId);
+
+            filter.addEventListener('input', () => renderSelectOptions(selectId));
+            filter.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ',') {
+                    event.preventDefault();
+                    addSelectionsFromFilterInput(filterId, selectId);
+                }
+            });
+
+            select.addEventListener('change', () => {
+                const selected = Array.from(select.selectedOptions).map(o => o.value);
+                selectedValuesById[selectId] = new Set(selected);
+            });
+        }
+
+        function renderSelectOptions(selectId) {
+            const select = document.getElementById(selectId);
+            const filterId = selectId === 'creature-name' ? 'creature-filter' : (selectId === 'map-name' ? 'map-filter' : 'item-filter');
+            const filterText = (document.getElementById(filterId).value || '').trim().toLowerCase();
+            const allOptions = selectOptionsById[selectId] || [];
+            const selected = selectedValuesById[selectId] || new Set();
+
+            select.innerHTML = '';
+
+            const visible = allOptions.filter(opt => {
+                if (selected.has(opt.value)) {
+                    return true;
+                }
+                if (!filterText) {
+                    return true;
+                }
+                return opt.label.toLowerCase().includes(filterText) || opt.value.toLowerCase().includes(filterText);
+            });
+
+            for (const opt of visible) {
+                const el = document.createElement('option');
+                el.value = opt.value;
+                el.textContent = opt.label;
+                el.selected = selected.has(opt.value);
+                select.appendChild(el);
+            }
+
+            if (!visible.length) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = 'No matching options';
+                empty.disabled = true;
+                select.appendChild(empty);
+            }
+        }
+
+        function addSelectionsFromFilterInput(filterId, selectId) {
+            const filter = document.getElementById(filterId);
+            const tokens = String(filter.value || '')
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean);
+            if (!tokens.length) {
+                return;
+            }
+
+            const allOptions = selectOptionsById[selectId] || [];
+            const selected = selectedValuesById[selectId] || new Set();
+
+            for (const token of tokens) {
+                const tokenLower = token.toLowerCase();
+                const exact = allOptions.find(opt => opt.value.toLowerCase() === tokenLower || opt.label.toLowerCase() === tokenLower);
+                if (exact) {
+                    selected.add(exact.value);
+                    continue;
+                }
+                const partialMatches = allOptions.filter(opt => opt.label.toLowerCase().includes(tokenLower));
+                partialMatches.forEach(opt => selected.add(opt.value));
+            }
+
+            selectedValuesById[selectId] = selected;
+            filter.value = '';
+            renderSelectOptions(selectId);
+            executeQuery();
+        }
+
+        function uniqueSorted(values) {
+            return Array.from(new Set(values.filter(Boolean).map(v => String(v).trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        }
+
+        function getSelectedValues(selectId) {
+            const select = document.getElementById(selectId);
+            const selected = Array.from(select.selectedOptions).map(opt => opt.value).filter(Boolean);
+            selectedValuesById[selectId] = new Set(selected);
+            return selected;
+        }
+
         function setExample(creature, map, continent, item) {
-            document.getElementById('creature-name').value = creature;
-            document.getElementById('map-name').value = map;
-            document.getElementById('continent').value = continent;
-            document.getElementById('item-name').value = item;
+            resetQuery();
+
+            if (creature) {
+                document.getElementById('creature-filter').value = creature;
+                addSelectionsFromFilterInput('creature-filter', 'creature-name');
+            }
+
+            if (map) {
+                if (String(map).toUpperCase() === 'C1') {
+                    selectedValuesById['map-name'].add('__C1__');
+                    renderSelectOptions('map-name');
+                } else if (String(map).toUpperCase() === 'C2') {
+                    selectedValuesById['map-name'].add('__C2__');
+                    renderSelectOptions('map-name');
+                } else {
+                    document.getElementById('map-filter').value = map;
+                    addSelectionsFromFilterInput('map-filter', 'map-name');
+                }
+            }
+
+            if (item) {
+                document.getElementById('item-filter').value = item;
+                addSelectionsFromFilterInput('item-filter', 'item-name');
+            }
+
             executeQuery();
         }
 
         function resetQuery() {
-            document.getElementById('creature-name').value = '';
-            document.getElementById('map-name').value = '';
-            document.getElementById('continent').value = '';
-            document.getElementById('item-name').value = '';
+            document.getElementById('creature-filter').value = '';
+            document.getElementById('map-filter').value = '';
+            document.getElementById('item-filter').value = '';
+            document.getElementById('include-associated-internals').checked = false;
             document.getElementById('query-type').value = 'creatures';
             document.getElementById('order-by').value = 'name';
+
+            selectedValuesById['creature-name'] = new Set();
+            selectedValuesById['map-name'] = new Set();
+            selectedValuesById['item-name'] = new Set();
+
+            renderSelectOptions('creature-name');
+            renderSelectOptions('map-name');
+            renderSelectOptions('item-name');
+
             document.getElementById('results-container').innerHTML = '';
+            document.getElementById('spawn-tools').style.display = 'none';
         }
 
         function executeQuery() {
-            const creatureName = document.getElementById('creature-name').value.toLowerCase();
-            const mapName = document.getElementById('map-name').value.toLowerCase();
-            const continent = document.getElementById('continent').value;
-            const itemName = document.getElementById('item-name').value.toLowerCase();
+            const creatureSelections = getSelectedValues('creature-name');
+            const mapSelections = getSelectedValues('map-name');
+            const itemSelections = getSelectedValues('item-name');
+
+            const creatureText = (document.getElementById('creature-filter').value || '').trim().toLowerCase();
+            const mapText = (document.getElementById('map-filter').value || '').trim().toLowerCase();
+            const itemText = (document.getElementById('item-filter').value || '').trim().toLowerCase();
+            const includeInternals = document.getElementById('include-associated-internals').checked;
             const queryType = document.getElementById('query-type').value;
             const orderBy = document.getElementById('order-by').value;
 
-            let results = [];
+            const allowedMaps = resolveAllowedMaps(mapSelections, mapText, includeInternals);
 
-            if (queryType === 'creatures') {
-                results = filterCreatures(creatureName, mapName, continent);
-            } else if (queryType === 'creature-locations') {
-                results = filterCreatures(creatureName, mapName, continent);
-            } else if (queryType === 'harvestables') {
-                results = filterHarvestables(mapName, itemName);
+            let results = [];
+            if (queryType === 'harvestables') {
+                results = filterHarvestables(itemSelections, itemText, allowedMaps);
+            } else {
+                results = filterCreatures(creatureSelections, creatureText, allowedMaps);
             }
 
-            // Sort results
             if (orderBy === 'count') {
-                results.sort((a, b) => (b.count || 1) - (a.count || 1));
+                results.sort((a, b) => Number(b.total_on_map || b.count || 1) - Number(a.total_on_map || a.count || 1));
             } else if (orderBy === 'map') {
                 results.sort((a, b) => (a.map_name || '').localeCompare(b.map_name || ''));
             } else {
@@ -591,60 +995,146 @@
             displayResults(results, queryType);
         }
 
-        function filterCreatures(creatureName, mapName, continent) {
+        function resolveAllowedMaps(mapSelections, mapText, includeInternals) {
+            const selected = new Set(mapSelections);
+            let limitByMap = selected.size > 0 || !!mapText;
+
+            if (!limitByMap) {
+                return null;
+            }
+
+            const allowed = new Set();
+
+            const addContinentMaps = (continentCode) => {
+                for (const mapName of allKnownMaps) {
+                    if (mapContinent.get(mapName) === continentCode) {
+                        allowed.add(mapName);
+                    }
+                }
+            };
+
+            if (selected.has('__ALL__')) {
+                for (const mapName of allKnownMaps) {
+                    allowed.add(mapName);
+                }
+            }
+            if (selected.has('__C1__')) {
+                addContinentMaps('C1');
+            }
+            if (selected.has('__C2__')) {
+                addContinentMaps('C2');
+            }
+
+            for (const value of selected) {
+                if (value.startsWith('__')) {
+                    continue;
+                }
+                allowed.add(value);
+                if (includeInternals && mainToInternals.has(value)) {
+                    for (const internalMap of mainToInternals.get(value)) {
+                        allowed.add(internalMap);
+                    }
+                }
+            }
+
+            if (mapText) {
+                const textMatches = Array.from(allKnownMaps).filter(name => name.toLowerCase().includes(mapText));
+                textMatches.forEach(name => allowed.add(name));
+            }
+
+            return allowed;
+        }
+
+        function filterCreatures(creatureSelections, creatureText, allowedMaps) {
+            const bySelection = new Set(creatureSelections.map(v => v.toLowerCase()));
             return creaturesData.filter(row => {
-                let match = true;
-                if (creatureName && !row.creature_name.toLowerCase().includes(creatureName)) match = false;
-                if (mapName && !row.map_name.toLowerCase().includes(mapName)) match = false;
-                if (continent && !row.map_name.includes(continent)) match = false;
-                return match;
+                const creature = (row.creature_name || '').trim();
+                const mapName = (row.map_name || '').trim();
+
+                if (allowedMaps && !allowedMaps.has(mapName)) {
+                    return false;
+                }
+
+                if (bySelection.size && !bySelection.has(creature.toLowerCase())) {
+                    return false;
+                }
+
+                if (!bySelection.size && creatureText && !creature.toLowerCase().includes(creatureText)) {
+                    return false;
+                }
+
+                return true;
             });
         }
 
-        function filterHarvestables(mapName, itemName) {
+        function filterHarvestables(itemSelections, itemText, allowedMaps) {
+            const bySelection = new Set(itemSelections.map(v => v.toLowerCase()));
             return harvestablesData.filter(row => {
-                let match = true;
-                if (mapName && !row.map_name.toLowerCase().includes(mapName)) match = false;
-                if (itemName && !row.item_name.toLowerCase().includes(itemName)) match = false;
-                return match;
+                const item = (row.item_name || '').trim();
+                const mapName = (row.map_name || '').trim();
+
+                if (allowedMaps && !allowedMaps.has(mapName)) {
+                    return false;
+                }
+
+                if (bySelection.size && !bySelection.has(item.toLowerCase())) {
+                    return false;
+                }
+
+                if (!bySelection.size && itemText && !item.toLowerCase().includes(itemText)) {
+                    return false;
+                }
+
+                return true;
             });
         }
 
         function displayResults(results, type) {
             const container = document.getElementById('results-container');
-            
-            if (results.length === 0) {
-                container.innerHTML = '<div class="no-results">No results found. Try different search terms.</div>';
+
+            if (!results.length) {
+                container.innerHTML = '<div class="no-results">No results found. Try selecting different filters.</div>';
+                refreshSpawnTools(results, type);
                 return;
             }
 
             let html = `<div class="result-info">Found ${results.length} results</div>`;
             html += '<div class="table-wrapper"><table>';
-            
-            if (type === 'creatures') {
-                html += '<thead><tr><th>Creature</th><th>Map</th><th>Coordinates</th></tr></thead>';
-                html += '<tbody>';
-                results.forEach(row => {
+
+            if (type === 'harvestables') {
+                html += '<thead><tr><th>Item</th><th>Map</th><th>Coordinates</th><th>Actions</th></tr></thead><tbody>';
+                results.forEach((row, idx) => {
                     html += `<tr>
-                        <td>${row.creature_name}</td>
-                        <td>${row.map_name}</td>
-                        <td>${row.spawn_coordinates || 'N/A'}</td>
+                        <td>${escapeHtml(row.item_name || '')}</td>
+                        <td>${escapeHtml(row.map_name || '')}</td>
+                        <td>${escapeHtml(row.coordinates || 'N/A')}</td>
+                        <td><button class="btn-edit" type="button" data-row-index="${idx}">Suggest Edit</button></td>
                     </tr>`;
                 });
-            } else if (type === 'harvestables') {
-                html += '<thead><tr><th>Item</th><th>Map</th><th>Coordinates</th></tr></thead>';
-                html += '<tbody>';
-                results.forEach(row => {
+            } else {
+                html += '<thead><tr><th>Creature</th><th>Map</th><th>Coordinates</th><th>Actions</th></tr></thead><tbody>';
+                results.forEach((row, idx) => {
                     html += `<tr>
-                        <td>${row.item_name}</td>
-                        <td>${row.map_name}</td>
-                        <td>${row.coordinates || 'N/A'}</td>
+                        <td>${escapeHtml(row.creature_name || '')}</td>
+                        <td>${escapeHtml(row.map_name || '')}</td>
+                        <td>${escapeHtml(row.spawn_coordinates || 'N/A')}</td>
+                        <td><button class="btn-edit" type="button" data-row-index="${idx}">Suggest Edit</button></td>
                     </tr>`;
                 });
             }
-            
+
             html += '</tbody></table></div>';
             container.innerHTML = html;
+
+            container.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.dataset.rowIndex || '-1');
+                    if (Number.isInteger(idx) && idx >= 0 && idx < currentResultRows.length) {
+                        queueSuggestedEdit(currentResultRows[idx], type);
+                    }
+                });
+            });
+
             refreshSpawnTools(results, type);
         }
 
@@ -747,7 +1237,9 @@
             const updatePreviewAndCommand = () => {
                 const selectedMap = mapSelect.value;
                 const selectedRows = spawnRows.filter(r => r.map_name === selectedMap);
-                const q = document.getElementById('creature-name').value || document.getElementById('item-name').value || '';
+                const creatureSel = getSelectedValues('creature-name').join(', ');
+                const itemSel = getSelectedValues('item-name').join(', ');
+                const q = creatureSel || itemSel || 'selection';
                 const exportType = (type === 'harvestables') ? 'harvestable' : 'creature';
                 const cmd = `python Utilities/Export-ELDB-MapMarks.py --map "${selectedMap}" --query "${q}" --type ${exportType}`;
                 command.textContent = cmd;
@@ -793,6 +1285,152 @@
             }).catch(() => {
                 alert('Clipboard write failed. Copy manually from command box.');
             });
+        }
+
+        function queueSuggestedEdit(row, type) {
+            const fieldPrompt = type === 'harvestables'
+                ? 'Which field should be corrected? (item_name, map_name, coordinates, category, notes)'
+                : 'Which field should be corrected? (creature_name, map_name, spawn_coordinates, total_on_map, notes)';
+            const fieldName = (prompt(fieldPrompt, type === 'harvestables' ? 'coordinates' : 'spawn_coordinates') || '').trim();
+            if (!fieldName) {
+                return;
+            }
+
+            const currentValue = String(row[fieldName] || '');
+            const proposedValue = (prompt(`Proposed value for ${fieldName}:`, currentValue) || '').trim();
+            if (!proposedValue) {
+                return;
+            }
+
+            const evidence = (prompt('Reason or evidence for this edit (optional):', '') || '').trim();
+
+            const payload = {
+                id: `${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+                created_utc: new Date().toISOString(),
+                status: 'pending',
+                source_query_type: type,
+                map_name: row.map_name || '',
+                object_name: row.creature_name || row.item_name || '',
+                field_name: fieldName,
+                current_value: currentValue,
+                proposed_value: proposedValue,
+                evidence,
+                row_snapshot: row
+            };
+
+            pendingEdits.push(payload);
+            savePendingEdits();
+            renderPendingEdits();
+            alert('Edit proposal queued. Use Download Queue JSON/CSV for review and approval workflow.');
+        }
+
+        function loadPendingEdits() {
+            try {
+                const raw = localStorage.getItem(PENDING_EDITS_KEY);
+                pendingEdits = raw ? JSON.parse(raw) : [];
+            } catch (err) {
+                pendingEdits = [];
+            }
+            renderPendingEdits();
+        }
+
+        function savePendingEdits() {
+            localStorage.setItem(PENDING_EDITS_KEY, JSON.stringify(pendingEdits));
+        }
+
+        function renderPendingEdits() {
+            const el = document.getElementById('edit-queue-table');
+            if (!pendingEdits.length) {
+                el.innerHTML = '<div class="helper-text">No pending edits queued.</div>';
+                return;
+            }
+
+            let html = '<div class="table-wrapper"><table><thead><tr><th>Status</th><th>Type</th><th>Object</th><th>Map</th><th>Field</th><th>Current</th><th>Proposed</th><th>Evidence</th><th>Actions</th></tr></thead><tbody>';
+            pendingEdits.forEach(edit => {
+                html += `<tr>
+                    <td><span class="queue-status ${escapeHtml(edit.status || 'pending')}">${escapeHtml(edit.status || 'pending')}</span></td>
+                    <td>${escapeHtml(edit.source_query_type || '')}</td>
+                    <td>${escapeHtml(edit.object_name || '')}</td>
+                    <td>${escapeHtml(edit.map_name || '')}</td>
+                    <td>${escapeHtml(edit.field_name || '')}</td>
+                    <td>${escapeHtml(edit.current_value || '')}</td>
+                    <td>${escapeHtml(edit.proposed_value || '')}</td>
+                    <td>${escapeHtml(edit.evidence || '')}</td>
+                    <td>
+                        <button class="btn-edit" type="button" onclick="updateEditStatus('${escapeHtml(edit.id)}','approved')">Approve</button>
+                        <button class="btn-edit" type="button" onclick="updateEditStatus('${escapeHtml(edit.id)}','rejected')">Reject</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+        }
+
+        function updateEditStatus(id, status) {
+            const idx = pendingEdits.findIndex(e => e.id === id);
+            if (idx < 0) {
+                return;
+            }
+            pendingEdits[idx].status = status;
+            pendingEdits[idx].status_updated_utc = new Date().toISOString();
+            savePendingEdits();
+            renderPendingEdits();
+        }
+
+        function clearPendingEdits() {
+            if (!confirm('Clear all pending edits from local queue?')) {
+                return;
+            }
+            pendingEdits = [];
+            savePendingEdits();
+            renderPendingEdits();
+        }
+
+        function exportPendingEditsJson() {
+            downloadTextFile('eldb-pending-edits.json', JSON.stringify(pendingEdits, null, 2));
+        }
+
+        function exportPendingEditsCsv() {
+            const headers = [
+                'id', 'created_utc', 'status', 'status_updated_utc', 'source_query_type',
+                'map_name', 'object_name', 'field_name', 'current_value', 'proposed_value', 'evidence'
+            ];
+
+            const lines = [headers.join(',')];
+            pendingEdits.forEach(row => {
+                const vals = headers.map(h => csvEscape(row[h] || ''));
+                lines.push(vals.join(','));
+            });
+            downloadTextFile('eldb-pending-edits.csv', lines.join('\n') + '\n');
+        }
+
+        function downloadTextFile(name, content) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function csvEscape(value) {
+            const text = String(value);
+            if (!text.includes(',') && !text.includes('"') && !text.includes('\n')) {
+                return text;
+            }
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
     </script>
 </body>
