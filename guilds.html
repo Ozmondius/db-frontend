@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lion Guild ELDB - Eternal Lands Database</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #D4AF37;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        header p {
+            font-size: 0.95em;
+            opacity: 0.95;
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tabs a {
+            background: #D4AF37;
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs a:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #D4AF37;
+            border-radius: 4px;
+        }
+        
+        .search-box input, .search-box select {
+            padding: 10px;
+            margin: 5px 10px 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        
+        .search-box button {
+            padding: 10px 20px;
+            background: #D4AF37;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .search-box button:hover {
+            background: #8B4513;
+            color: #D4AF37;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 70vh;
+            margin-top: 20px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95em;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 2px solid #D4AF37;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        
+        th:hover {
+            background: #8B4513;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        tbody tr:hover {
+            background: #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #8B4513 0%, #1a1a1a 100%);
+            color: #D4AF37;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-box .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        footer {
+            background: #1a1a1a;
+            color: #D4AF37;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 2px solid #D4AF37;
+        }
+        
+        .filter-count {
+            color: #8B4513;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8em; }
+            .container { padding: 10px; }
+            .content { padding: 15px; }
+            table { font-size: 0.85em; }
+            th, td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="container">
+        <h1>🏰 Guild Entrance Secrets</h1>
+        <p>Known guild entrance points and trigger locations</p>
+        <div class="nav-tabs">
+            <a href="index.html">← Dashboard</a>
+            <a href="harvestables.html">Harvestables</a>
+            <a href="secrets.html">Secret Passages</a>
+            <a href="creatures.html">Creatures</a>
+            <a href="routes.html">Route Guide</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            <div class="search-box">
+                <input type="text" id="guildFilter" list="guildSuggestions" autocomplete="off" placeholder="Filter by guild...">
+                <input type="text" id="mapFilter" list="mapSuggestions" autocomplete="off" placeholder="Filter by map...">
+                <input type="text" id="coordFilter" autocomplete="off" placeholder="Filter by coordinates...">
+                <select id="exitFilter">
+                    <option value="">All Exit States</option>
+                    <option value="with">Has Exit Coordinates</option>
+                    <option value="without">Missing Exit Coordinates</option>
+                </select>
+                <select id="guardbotFilter">
+                    <option value="">All Guardbot States</option>
+                    <option value="yes">Has Guardbot</option>
+                    <option value="no">No Guardbot</option>
+                    <option value="unknown">Guardbot Unknown</option>
+                </select>
+                <input type="text" id="guardbotNameFilter" autocomplete="off" placeholder="Filter by guardbot name...">
+                <button onclick="filterTable()">Search</button>
+                <span class="filter-count" id="count"></span>
+            </div>
+            <datalist id="guildSuggestions">
+    <option value="#nU"></option>
+<option value="***"></option>
+<option value="*CO*"></option>
+<option value="*KA*"></option>
+<option value="-L-E-"></option>
+<option value="BARD"></option>
+<option value="BoC"></option>
+<option value="DD"></option>
+<option value="DaO"></option>
+<option value="DoA"></option>
+<option value="EgoW"></option>
+<option value="FD"></option>
+<option value="GWAR"></option>
+<option value="Iron"></option>
+<option value="KD"></option>
+<option value="KotP"></option>
+<option value="L.A."></option>
+<option value="LGC"></option>
+<option value="LION"></option>
+<option value="LLL"></option>
+<option value="LNX"></option>
+<option value="LotS"></option>
+<option value="Ozu!"></option>
+<option value="PL"></option>
+<option value="PkG"></option>
+<option value="Riva"></option>
+<option value="[NL]"></option>
+<option value="^@^"></option>
+<option value="segV"></option>
+<option value="sitU"></option>
+<option value="~O~"></option>
+
+            </datalist>
+            <datalist id="mapSuggestions">
+    <option value="Aeth Aelfan"></option>
+<option value="Arius"></option>
+<option value="Desert Pines"></option>
+<option value="Emerald Valley Trade Route"></option>
+<option value="Idaloran"></option>
+<option value="Irsis"></option>
+<option value="Naralik"></option>
+<option value="Nordcarn South Cave"></option>
+<option value="Palon Vertas"></option>
+<option value="Portland"></option>
+<option value="South Redmoon"></option>
+<option value="Tarsengaard"></option>
+<option value="Tarsengaard Docks"></option>
+<option value="Tarsengaard Island"></option>
+<option value="Valley of the Dwarves"></option>
+<option value="Valley of the Dwarves Docks"></option>
+<option value="White Stone"></option>
+
+            </datalist>
+
+            <div class="stats">
+                <div class='stat-box'><div class='number'>31</div><div class='label'>Total Entries</div></div>
+                <div class='stat-box'><div class='number'>31</div><div class='label'>Guilds</div></div>
+                <div class='stat-box'><div class='number'>17</div><div class='label'>Maps</div></div>
+                <div class='stat-box'><div class='number'>0</div><div class='label'>With Exit Coords</div></div>
+                <div class='stat-box'><div class='number'>31</div><div class='label'>Missing Exit Coords</div></div>
+                <div class='stat-box'><div class='number'>4</div><div class='label'>Has Guardbot</div></div>
+                <div class='stat-box'><div class='number'>0</div><div class='label'>No Guardbot</div></div>
+                <div class='stat-box'><div class='number'>27</div><div class='label'>Guardbot Unknown</div></div>
+            </div>
+
+            <div class="table-wrapper" style="padding: 12px; background: #fbfbfb;">
+                <div id="reportBody">
+    
+                    <div class="map-group" data-map="aeth aelfan">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Aeth Aelfan</h3>
+            
+                        <div class="report-row" data-guild="gwar" data-map="aeth aelfan" data-coord="[365,275] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Aeth Aelfan</strong></div>
+                            <div>Access [365,275] | Use Seashell in house | destination GWAR</div>
+                            <div>Known map marks: entrance marker [365,275]</div>
+                            <div>Notes: Use Seashell in house</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="kotp" data-map="aeth aelfan" data-coord="[330,160] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Aeth Aelfan</strong></div>
+                            <div>Access [330,160] | Use Leather Gloves on Sulfur in Lighthouse | destination KotP</div>
+                            <div>Known map marks: entrance marker [330,160]</div>
+                            <div>Notes: Use Leather Gloves on Sulfur in Lighthouse</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="arius">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Arius</h3>
+            
+                        <div class="report-row" data-guild="egow" data-map="arius" data-coord="[290,265] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Arius</strong></div>
+                            <div>Access [290,265] | Use S2E on top ladder | destination EgoW</div>
+                            <div>Known map marks: entrance marker [290,265]</div>
+                            <div>Notes: Use S2E on top ladder</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="desert pines">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Desert Pines</h3>
+            
+                        <div class="report-row" data-guild="iron" data-map="desert pines" data-coord="[220,120] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Desert Pines</strong></div>
+                            <div>Access [220,120] | Use bone on house, and serpent stone on ladder | destination Iron</div>
+                            <div>Known map marks: entrance marker [220,120]</div>
+                            <div>Notes: Use bone on house, and serpent stone on ladder</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="emerald valley trade route">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Emerald Valley Trade Route</h3>
+            
+                        <div class="report-row" data-guild="-l-e-" data-map="emerald valley trade route" data-coord="[260,200] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Emerald Valley Trade Route</strong></div>
+                            <div>Access [260,200] | Use blackrose on Stone | destination -L-E-</div>
+                            <div>Known map marks: entrance marker [260,200]</div>
+                            <div>Notes: Use blackrose on Stone</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="kd" data-map="emerald valley trade route" data-coord="[290,365] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Emerald Valley Trade Route</strong></div>
+                            <div>Access [290,365] | Use lily pad | destination KD</div>
+                            <div>Known map marks: entrance marker [290,365]</div>
+                            <div>Notes: Use lily pad</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="lion" data-map="emerald valley trade route" data-coord="[265,275] " data-guard="yes" data-guardname="unforgivin">
+                            <div style="margin: 10px 0 2px;"><strong>Emerald Valley Trade Route</strong></div>
+                            <div>Access [265,275] | Use Book of purple dye on Rock, Poison Ivy on crate, and Phoenix feather on pole south east | destination LION</div>
+                            <div>Known map marks: entrance marker [265,275]</div>
+                            <div>Notes: Use Book of purple dye on Rock, Poison Ivy on crate, and Phoenix feather on pole south east | Chester note: Guard bot Unforgivin often offline. | Doc note: Guard bot Unforgivin often offline | guardbot: Unforgivin</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="idaloran">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Idaloran</h3>
+            
+                        <div class="report-row" data-guild="boc" data-map="idaloran" data-coord="[530,160] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Idaloran</strong></div>
+                            <div>Access [530,160] | Use Binding Stone on Gold Coin | destination BoC</div>
+                            <div>Known map marks: entrance marker [530,160]</div>
+                            <div>Notes: Use Binding Stone on Gold Coin</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="dd" data-map="idaloran" data-coord="[373,292] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Idaloran</strong></div>
+                            <div>Access [373,292] | In Magic Shop use Candle on Shelf | destination DD</div>
+                            <div>Known map marks: entrance marker [373,292]</div>
+                            <div>Notes: In Magic Shop use Candle on Shelf</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="irsis">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Irsis</h3>
+            
+                        <div class="report-row" data-guild="fd" data-map="irsis" data-coord="[45,100] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Irsis</strong></div>
+                            <div>Access [45,100] | Use Chest, and Black Rose on Coin | destination FD</div>
+                            <div>Known map marks: entrance marker [45,100]</div>
+                            <div>Notes: Use Chest, and Black Rose on Coin | Note in doc says this entry is accurate but location may be impacted by Irsis update</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="naralik">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Naralik</h3>
+            
+                        <div class="report-row" data-guild="*ka*" data-map="naralik" data-coord="[75,85] " data-guard="yes" data-guardname="ellstren">
+                            <div style="margin: 10px 0 2px;"><strong>Naralik</strong></div>
+                            <div>Access [75,85] | Use ELE on Crate | destination *KA*</div>
+                            <div>Known map marks: entrance marker [75,85]</div>
+                            <div>Notes: Use ELE on Crate | Chester note: Guard bot Ellstren. | Doc note: Guard bot Ellstren | guardbot: Ellstren</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="nordcarn south cave">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Nordcarn South Cave</h3>
+            
+                        <div class="report-row" data-guild="lnx" data-map="nordcarn south cave" data-coord="[100,50] " data-guard="yes" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Nordcarn South Cave</strong></div>
+                            <div>Access [100,50] | Use cobweb in ruined house | destination LNX</div>
+                            <div>Known map marks: entrance marker [100,50]</div>
+                            <div>Notes: Use cobweb in ruined house | Chester note: Friendly bots (name not specified). | Doc note: Friendly bots</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="palon vertas">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Palon Vertas</h3>
+            
+                        <div class="report-row" data-guild="riva" data-map="palon vertas" data-coord="[203,186] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Palon Vertas</strong></div>
+                            <div>Access [203,186] | Use Wolf Fur on banner | destination Riva</div>
+                            <div>Known map marks: entrance marker [203,186]</div>
+                            <div>Notes: Use Wolf Fur on banner</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="portland">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Portland</h3>
+            
+                        <div class="report-row" data-guild="***" data-map="portland" data-coord="[120,20] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Portland</strong></div>
+                            <div>Access [120,20] | Use boat | destination ***</div>
+                            <div>Known map marks: entrance marker [120,20]</div>
+                            <div>Notes: Use boat | Possible overlap with guildmap_epicevents; keep as separate candidate until verified</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="dao" data-map="portland" data-coord="[50,190] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Portland</strong></div>
+                            <div>Access [50,190] | Use Closet in house | destination DaO</div>
+                            <div>Known map marks: entrance marker [50,190]</div>
+                            <div>Notes: Use Closet in house</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="segv" data-map="portland" data-coord="[230,80] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Portland</strong></div>
+                            <div>Access [230,80] | Use Barrel, EFE on boat, and MOL on ditch | destination segV</div>
+                            <div>Known map marks: entrance marker [230,80]</div>
+                            <div>Notes: Use Barrel, EFE on boat, and MOL on ditch | Chester note: Guard bot note partially obscured in source image. | Guard bot note partially obscured in image</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="south redmoon">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">South Redmoon</h3>
+            
+                        <div class="report-row" data-guild="lgc" data-map="south redmoon" data-coord="[179,63] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>South Redmoon</strong></div>
+                            <div>Access [179,63] | Use Pole | destination LGC</div>
+                            <div>Known map marks: entrance marker [179,63]</div>
+                            <div>Notes: Use Pole</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="tarsengaard">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Tarsengaard</h3>
+            
+                        <div class="report-row" data-guild="doa" data-map="tarsengaard" data-coord="[187,70] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Tarsengaard</strong></div>
+                            <div>Access [187,70] | access method not yet recorded | destination DoA</div>
+                            <div>Known map marks: entrance marker [187,70]</div>
+                            <div>Notes: </div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="tarsengaard docks">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Tarsengaard Docks</h3>
+            
+                        <div class="report-row" data-guild="ozu!" data-map="tarsengaard docks" data-coord="[130,310] " data-guard="yes" data-guardname="tasmani">
+                            <div style="margin: 10px 0 2px;"><strong>Tarsengaard Docks</strong></div>
+                            <div>Access [130,310] | access method not yet recorded | destination Ozu!</div>
+                            <div>Known map marks: entrance marker [130,310]</div>
+                            <div>Notes: Chester note: Guard bot Tasmani expired. | guardbot: Tasmani</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="tarsengaard island">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Tarsengaard Island</h3>
+            
+                        <div class="report-row" data-guild="#nu" data-map="tarsengaard island" data-coord="[340,300] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Tarsengaard Island</strong></div>
+                            <div>Access [340,300] | access method not yet recorded | destination #nU</div>
+                            <div>Known map marks: entrance marker [340,300]</div>
+                            <div>Notes: </div>
+                        </div>
+        
+                        <div class="report-row" data-guild="lots" data-map="tarsengaard island" data-coord="[280,350] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Tarsengaard Island</strong></div>
+                            <div>Access [280,350] | access method not yet recorded | destination LotS</div>
+                            <div>Known map marks: entrance marker [280,350]</div>
+                            <div>Notes: </div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="valley of the dwarves">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Valley of the Dwarves</h3>
+            
+                        <div class="report-row" data-guild="*co*" data-map="valley of the dwarves" data-coord="[40,180] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Valley of the Dwarves</strong></div>
+                            <div>Access [40,180] | Use lily pad | destination *CO*</div>
+                            <div>Known map marks: entrance marker [40,180]</div>
+                            <div>Notes: Use lily pad</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="l.a." data-map="valley of the dwarves" data-coord="[60,90] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Valley of the Dwarves</strong></div>
+                            <div>Access [60,90] | Use lily pad | destination L.A.</div>
+                            <div>Known map marks: entrance marker [60,90]</div>
+                            <div>Notes: Use lily pad</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="pkg" data-map="valley of the dwarves" data-coord="[80,120] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Valley of the Dwarves</strong></div>
+                            <div>Access [80,120] | Use well, and Book of Axe Construction on Crate | destination PkG</div>
+                            <div>Known map marks: entrance marker [80,120]</div>
+                            <div>Notes: Use well, and Book of Axe Construction on Crate</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="valley of the dwarves docks">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">Valley of the Dwarves Docks</h3>
+            
+                        <div class="report-row" data-guild="^@^" data-map="valley of the dwarves docks" data-coord="[70,160] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Valley of the Dwarves Docks</strong></div>
+                            <div>Access [70,160] | Use Hydrogenium Bar on Crate | destination ^@^</div>
+                            <div>Known map marks: entrance marker [70,160]</div>
+                            <div>Notes: Use Hydrogenium Bar on Crate | Guild id unknown from this document</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="pl" data-map="valley of the dwarves docks" data-coord="[71,158] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>Valley of the Dwarves Docks</strong></div>
+                            <div>Access [71,158] | Use Dung Teleporter on Bucket | destination PL</div>
+                            <div>Known map marks: entrance marker [71,158]</div>
+                            <div>Notes: Use Dung Teleporter on Bucket | Chester note: Guard bot note partially obscured in source image. | Guard bot note partially obscured in image</div>
+                        </div>
+        </div>
+                    <div class="map-group" data-map="white stone">
+                        <h3 style="margin: 14px 0 8px; color: #8B4513;">White Stone</h3>
+            
+                        <div class="report-row" data-guild="[nl]" data-map="white stone" data-coord="[420,166] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>White Stone</strong></div>
+                            <div>Access [420,166] | access method not yet recorded | destination [NL]</div>
+                            <div>Known map marks: entrance marker [420,166]</div>
+                            <div>Notes: </div>
+                        </div>
+        
+                        <div class="report-row" data-guild="bard" data-map="white stone" data-coord="[230,420] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>White Stone</strong></div>
+                            <div>Access [230,420] | House use Gold Feather | destination BARD</div>
+                            <div>Known map marks: entrance marker [230,420]</div>
+                            <div>Notes: House use Gold Feather</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="lll" data-map="white stone" data-coord="[22,760] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>White Stone</strong></div>
+                            <div>Access [22,760] | Use Honey Comb on Crate | destination LLL</div>
+                            <div>Known map marks: entrance marker [22,760]</div>
+                            <div>Notes: Use Honey Comb on Crate</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="situ" data-map="white stone" data-coord="[112,680] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>White Stone</strong></div>
+                            <div>Access [112,680] | Use Gold Coin on Stand | destination sitU</div>
+                            <div>Known map marks: entrance marker [112,680]</div>
+                            <div>Notes: Use Gold Coin on Stand</div>
+                        </div>
+        
+                        <div class="report-row" data-guild="~o~" data-map="white stone" data-coord="[685,108] " data-guard="unknown" data-guardname="">
+                            <div style="margin: 10px 0 2px;"><strong>White Stone</strong></div>
+                            <div>Access [685,108] | Use Bread on Rock | destination ~O~</div>
+                            <div>Known map marks: entrance marker [685,108]</div>
+                            <div>Notes: Use Bread on Rock | Guild id unknown from this document</div>
+                        </div>
+        </div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">Main Map ↕</th>
+                            <th onclick="sortTable(1)">Submap ↕</th>
+                            <th onclick="sortTable(2)">Sub-submap ↕</th>
+                            <th onclick="sortTable(3)">Access XY ↕</th>
+                            <th onclick="sortTable(4)">Action ↕</th>
+                            <th onclick="sortTable(5)">Destination ↕</th>
+                            <th onclick="sortTable(6)">Landing XY ↕</th>
+                            <th onclick="sortTable(7)">Guardbot ↕</th>
+                            <th onclick="sortTable(8)">Notes ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    
+                        <tr>
+                            <td>Aeth Aelfan</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[365,275]</code></td>
+                            <td>Use Seashell in house</td>
+                            <td>GWAR</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Aeth Aelfan</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[330,160]</code></td>
+                            <td>Use Leather Gloves on Sulfur in Lighthouse</td>
+                            <td>KotP</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Arius</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[290,265]</code></td>
+                            <td>Use S2E on top ladder</td>
+                            <td>EgoW</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Desert Pines</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[220,120]</code></td>
+                            <td>Use bone on house, and serpent stone on ladder</td>
+                            <td>Iron</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Emerald Valley Trade Route</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[260,200]</code></td>
+                            <td>Use blackrose on Stone</td>
+                            <td>-L-E-</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Emerald Valley Trade Route</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[290,365]</code></td>
+                            <td>Use lily pad</td>
+                            <td>KD</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Emerald Valley Trade Route</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[265,275]</code></td>
+                            <td>Use Book of purple dye on Rock, Poison Ivy on crate, and Phoenix feather on pole south east</td>
+                            <td>LION</td>
+                            <td><code></code></td>
+                            <td>Yes (Unforgivin)</td>
+                            <td>Chester note: Guard bot Unforgivin often offline.</td>
+                        </tr>
+        
+                        <tr>
+                            <td>Idaloran</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[530,160]</code></td>
+                            <td>Use Binding Stone on Gold Coin</td>
+                            <td>BoC</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Idaloran</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[373,292]</code></td>
+                            <td>In Magic Shop use Candle on Shelf</td>
+                            <td>DD</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Irsis</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[45,100]</code></td>
+                            <td>Use Chest, and Black Rose on Coin</td>
+                            <td>FD</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Naralik</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[75,85]</code></td>
+                            <td>Use ELE on Crate</td>
+                            <td>*KA*</td>
+                            <td><code></code></td>
+                            <td>Yes (Ellstren)</td>
+                            <td>Chester note: Guard bot Ellstren.</td>
+                        </tr>
+        
+                        <tr>
+                            <td>Nordcarn South Cave</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[100,50]</code></td>
+                            <td>Use cobweb in ruined house</td>
+                            <td>LNX</td>
+                            <td><code></code></td>
+                            <td>Yes (name unknown)</td>
+                            <td>Chester note: Friendly bots (name not specified).</td>
+                        </tr>
+        
+                        <tr>
+                            <td>Palon Vertas</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[203,186]</code></td>
+                            <td>Use Wolf Fur on banner</td>
+                            <td>Riva</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Portland</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[120,20]</code></td>
+                            <td>Use boat</td>
+                            <td>***</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Portland</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[50,190]</code></td>
+                            <td>Use Closet in house</td>
+                            <td>DaO</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Portland</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[230,80]</code></td>
+                            <td>Use Barrel, EFE on boat, and MOL on ditch</td>
+                            <td>segV</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td>Chester note: Guard bot note partially obscured in source image.</td>
+                        </tr>
+        
+                        <tr>
+                            <td>South Redmoon</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[179,63]</code></td>
+                            <td>Use Pole</td>
+                            <td>LGC</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Tarsengaard</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[187,70]</code></td>
+                            <td>access method not yet recorded</td>
+                            <td>DoA</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Tarsengaard Docks</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[130,310]</code></td>
+                            <td>access method not yet recorded</td>
+                            <td>Ozu!</td>
+                            <td><code></code></td>
+                            <td>Yes (Tasmani)</td>
+                            <td>Chester note: Guard bot Tasmani expired.</td>
+                        </tr>
+        
+                        <tr>
+                            <td>Tarsengaard Island</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[340,300]</code></td>
+                            <td>access method not yet recorded</td>
+                            <td>#nU</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Tarsengaard Island</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[280,350]</code></td>
+                            <td>access method not yet recorded</td>
+                            <td>LotS</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Valley of the Dwarves</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[40,180]</code></td>
+                            <td>Use lily pad</td>
+                            <td>*CO*</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Valley of the Dwarves</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[60,90]</code></td>
+                            <td>Use lily pad</td>
+                            <td>L.A.</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Valley of the Dwarves</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[80,120]</code></td>
+                            <td>Use well, and Book of Axe Construction on Crate</td>
+                            <td>PkG</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>Valley of the Dwarves Docks</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[71,158]</code></td>
+                            <td>Use Dung Teleporter on Bucket</td>
+                            <td>PL</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td>Chester note: Guard bot note partially obscured in source image.</td>
+                        </tr>
+        
+                        <tr>
+                            <td>Valley of the Dwarves Docks</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[70,160]</code></td>
+                            <td>Use Hydrogenium Bar on Crate</td>
+                            <td>^@^</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>White Stone</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[230,420]</code></td>
+                            <td>House use Gold Feather</td>
+                            <td>BARD</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>White Stone</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[22,760]</code></td>
+                            <td>Use Honey Comb on Crate</td>
+                            <td>LLL</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>White Stone</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[420,166]</code></td>
+                            <td>access method not yet recorded</td>
+                            <td>[NL]</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>White Stone</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[112,680]</code></td>
+                            <td>Use Gold Coin on Stand</td>
+                            <td>sitU</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                        <tr>
+                            <td>White Stone</td>
+                            <td></td>
+                            <td></td>
+                            <td><code>[685,108]</code></td>
+                            <td>Use Bread on Rock</td>
+                            <td>~O~</td>
+                            <td><code></code></td>
+                            <td>Unknown</td>
+                            <td></td>
+                        </tr>
+        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterTable() {
+            const guildFilter = document.getElementById('guildFilter').value.toLowerCase();
+            const mapFilter = document.getElementById('mapFilter').value.toLowerCase();
+            const coordFilter = document.getElementById('coordFilter').value.toLowerCase();
+            const exitFilter = document.getElementById('exitFilter').value;
+            const guardbotFilter = document.getElementById('guardbotFilter').value;
+            const guardbotNameFilter = document.getElementById('guardbotNameFilter').value.toLowerCase();
+            const table = document.getElementById('dataTable');
+            let visible = 0;
+
+            for (let row of table.querySelectorAll('tbody tr')) {
+                const map = [row.cells[0].textContent, row.cells[1].textContent, row.cells[2].textContent].join(' ').toLowerCase();
+                const entrance = row.cells[3].textContent.toLowerCase();
+                const guild = row.cells[5].textContent.toLowerCase();
+                const exit = row.cells[6].textContent.toLowerCase();
+                const guardbot = row.cells[7].textContent.toLowerCase();
+                const guardbotNote = row.cells[8].textContent.toLowerCase();
+                const hasExit = exit.trim().length > 0;
+                const hasGuardbot = guardbot.startsWith('yes');
+                const noGuardbot = guardbot === 'no';
+
+                const stateMatch = !exitFilter ||
+                    (exitFilter === 'with' && hasExit) ||
+                    (exitFilter === 'without' && !hasExit);
+
+                const guardbotStateMatch = !guardbotFilter ||
+                    (guardbotFilter === 'yes' && hasGuardbot) ||
+                    (guardbotFilter === 'no' && noGuardbot) ||
+                    (guardbotFilter === 'unknown' && !hasGuardbot && !noGuardbot);
+
+                const textMatch = (!guildFilter || guild.includes(guildFilter)) &&
+                                  (!mapFilter || map.includes(mapFilter)) &&
+                                  (!coordFilter || entrance.includes(coordFilter) || exit.includes(coordFilter)) &&
+                                  (!guardbotNameFilter || guardbot.includes(guardbotNameFilter) || guardbotNote.includes(guardbotNameFilter));
+
+                const match = stateMatch && guardbotStateMatch && textMatch;
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            }
+
+            for (let row of document.querySelectorAll('.report-row')) {
+                const guild = row.dataset.guild || '';
+                const map = row.dataset.map || '';
+                const coord = row.dataset.coord || '';
+                const guardbotState = row.dataset.guard || '';
+                const guardName = row.dataset.guardname || '';
+
+                const hasExit = coord.trim().length > 0 && coord.includes('[') && coord.split('[').length > 2;
+                const hasGuardbot = guardbotState === 'yes';
+                const noGuardbot = guardbotState === 'no';
+
+                const stateMatch = !exitFilter ||
+                    (exitFilter === 'with' && hasExit) ||
+                    (exitFilter === 'without' && !hasExit);
+
+                const guardbotStateMatch = !guardbotFilter ||
+                    (guardbotFilter === 'yes' && hasGuardbot) ||
+                    (guardbotFilter === 'no' && noGuardbot) ||
+                    (guardbotFilter === 'unknown' && !hasGuardbot && !noGuardbot);
+
+                const textMatch = (!guildFilter || guild.includes(guildFilter)) &&
+                                  (!mapFilter || map.includes(mapFilter)) &&
+                                  (!coordFilter || coord.includes(coordFilter)) &&
+                                  (!guardbotNameFilter || guardName.includes(guardbotNameFilter) || row.textContent.toLowerCase().includes(guardbotNameFilter));
+
+                const match = stateMatch && guardbotStateMatch && textMatch;
+                row.style.display = match ? '' : 'none';
+            }
+
+            for (let group of document.querySelectorAll('.map-group')) {
+                const anyVisible = Array.from(group.querySelectorAll('.report-row')).some(r => r.style.display !== 'none');
+                group.style.display = anyVisible ? '' : 'none';
+            }
+
+            document.getElementById('count').textContent = `Showing ${visible} of 31 results`;
+        }
+
+        function sortTable(n) {
+            const table = document.getElementById('dataTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.sort((a, b) => {
+                const aVal = a.cells[n].textContent.toLowerCase();
+                const bVal = b.cells[n].textContent.toLowerCase();
+                return aVal.localeCompare(bVal);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('guild')) document.getElementById('guildFilter').value = params.get('guild');
+        if (params.has('map')) document.getElementById('mapFilter').value = params.get('map');
+        if (params.has('coord')) document.getElementById('coordFilter').value = params.get('coord');
+        if (params.has('guardbot')) document.getElementById('guardbotFilter').value = params.get('guardbot');
+        if (params.has('guardbot_name')) document.getElementById('guardbotNameFilter').value = params.get('guardbot_name');
+        if (typeof filterTable === 'function') filterTable();
+        document.getElementById('count').textContent = `Showing 31 results`;
+        document.getElementById('guildFilter').addEventListener('input', filterTable);
+        document.getElementById('mapFilter').addEventListener('input', filterTable);
+        document.getElementById('coordFilter').addEventListener('input', filterTable);
+        document.getElementById('exitFilter').addEventListener('change', filterTable);
+        document.getElementById('guardbotFilter').addEventListener('change', filterTable);
+        document.getElementById('guardbotNameFilter').addEventListener('input', filterTable);
+    </script>
+    
+    <footer>
+        <p>Lion Guild ELDB - Eternal Lands Database</p>
+        <p>Generated: 2026-04-21 15:42:52</p>
+        <p><small>Data sourced from el-db.com | Updated weekly</small></p>
+    </footer>
+</body>
+</html>

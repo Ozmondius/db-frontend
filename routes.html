@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lion Guild ELDB - Eternal Lands Database</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #D4AF37;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        header p {
+            font-size: 0.95em;
+            opacity: 0.95;
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tabs a {
+            background: #D4AF37;
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs a:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #D4AF37;
+            border-radius: 4px;
+        }
+        
+        .search-box input, .search-box select {
+            padding: 10px;
+            margin: 5px 10px 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        
+        .search-box button {
+            padding: 10px 20px;
+            background: #D4AF37;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .search-box button:hover {
+            background: #8B4513;
+            color: #D4AF37;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 70vh;
+            margin-top: 20px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95em;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 2px solid #D4AF37;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        
+        th:hover {
+            background: #8B4513;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        tbody tr:hover {
+            background: #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #8B4513 0%, #1a1a1a 100%);
+            color: #D4AF37;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-box .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        footer {
+            background: #1a1a1a;
+            color: #D4AF37;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 2px solid #D4AF37;
+        }
+        
+        .filter-count {
+            color: #8B4513;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8em; }
+            .container { padding: 10px; }
+            .content { padding: 15px; }
+            table { font-size: 0.85em; }
+            th, td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="container">
+        <h1>📍 Route Guide</h1>
+        <p>Multi-map routes and transition paths</p>
+        <div class="nav-tabs">
+            <a href="index.html">← Dashboard</a>
+            <a href="harvestables.html">Harvestables</a>
+            <a href="secrets.html">Secret Passages</a>
+            <a href="creatures.html">Creatures</a>
+            <a href="guilds.html">Guild Entrances</a>
+            <a href="custom-query.html">🔍 Custom Query</a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="content">
+    ï»¿<h3>EL-DB Transition Guide (Human Readable)<br><br>Generated: 2026-04-19 19:36:09<br><br>This guide is built from public EL-DB map pages.<br>It focuses on transitions a person can reason about quickly: exits, teleports, same-map paths, and internal entrances.<br>Secret paths are intentionally not included by EL-DB and therefore are not represented here.<br><br>#<h3>Global Summary<br><br>- Maps parsed: 51<br>- Transition rows: 1009<br>- Exits: 172<br>- Teleports: 40<br>- Same-map paths: 116<br>- Internal entrances: 681<br>- Maps with harvestables: 42<br>- Direct harvestable-map exits: 162<br><br>#<h3>Aeth Aelfan<br><br>Source: https://el-db.com/Aeth_Aelfan.html<br>Counts -> Exits: 5, Teleports: 0, Same-map paths: 2, Internals: 22, Harvestables: 1273<br><br>##<h3>Exits<br>- Egratia Point at [367,249]<br>- Glacmor at [348,132]<br>- Kusamura Jungle at [35,371]<br>- Willowvine Forest at [16,319]<br>- Zirakinbar at [321,137]<br><br>##<h3>Same-Map Paths<br>- City Gate to PK area at [78,244]<br>- Gate North of Storage at [200,286]<br><br>##<h3>Internal Entrances<br>- Elven Pharmacy at [21,27]<br>- Flowerchild Inn at [340,239]<br>- Hedgemart Utility and Ordinance store at [301,227]<br>- Lothalith Fortress (In) at [69,231]<br>- Lothalith Fortress (Out) at [142,225]<br>- Ruby Cave at [50,86]<br>- Smuggler's Cave (Main) at [304,60]<br>- Smuggler's Cave (Water) at [290,24]<br>- Storage at [234,196]<br>- Wyrmgoth Cave (North) at [198,368]<br>- ... plus 12 more internal entrances (see CSV for full list).<br><br>#<h3>Arius<br><br>Source: https://el-db.com/Arius.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 23, Internals: 17, Harvestables: 1409<br><br>##<h3>Exits<br>- Irinveron at [29,229]<br>- Irsis at [14,188]<br>- Willowvine Forest at [221,336]<br><br>##<h3>Same-Map Paths<br>- Gypsum Cart at [246,247]<br>- Gypsum Cart at [179,194]<br>- Ladder at [28,160]<br>- Ladder at [32,160]<br>- Ladder at [130,209]<br>- Ladder at [126,209]<br>- Tree Stand at [18,341]<br>- Wall Door at [76,133]<br>- Wall Door at [130,255]<br>- Wall Door at [131,265]<br>- Wall Door at [91,133]<br>- Wall Door at [131,344]<br>- Wall Door at [107,133]<br>- Wall Door at [126,348]<br>- Wall Door at [119,133]<br>- Wall Door at [26,136]<br>- Wall Door at [143,133]<br>- Wall Door at [29,133]<br>- Wall Door at [148,138]<br>- Wall Door at [42,133]<br>- Wall Door at [130,212]<br>- Wall Door at [54,133]<br>- Wall Door at [130,227]<br><br>##<h3>Internal Entrances<br>- Coal Cave at [208,255]<br>- Copper Cave - Gypsum Entrance at [219,197]<br>- Copper Cave - South Entrance at [243,171]<br>- Gypsum Gorge Tavern at [311,125]<br>- Magic School - Archmage's Residence (MS20) at [103,242]<br>- Magic School - Engineering School (MS16) at [60,249]<br>- Magic School - Main Hall North (MS1) at [85,274]<br>- Magic School - Main Hall South (MS1) at [92,239]<br>- Magic School - Tunnel (MS4) at [168,232]<br>- Arius City General Store at [69,214]<br>- ... plus 7 more internal entrances (see CSV for full list).<br><br>#<h3>Bethel<br><br>Source: https://el-db.com/Bethel.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 24, Internals: 28, Harvestables: 64<br><br>##<h3>Exits<br>- Idaloran at [13,24]<br>- Palon Vertas at [186,28]<br>- Sedicolis at [177,130]<br><br>##<h3>Same-Map Paths<br>- ladder at [143,177]<br>- ladder at [168,155]<br>- ladder at [170,116]<br>- ladder at [172,96]<br>- ladder at [142,181]<br>- ladder at [162,173]<br>- ladder at [177,144]<br>- ladder at [178,98]<br>- ladder at [127,179]<br>- ladder at [160,171]<br>- ladder at [170,142]<br>- ladder at [178,104]<br>- ladder at [178,69]<br>- ladder at [127,173]<br>- ladder at [147,181]<br>- ladder at [176,101]<br>- ladder at [174,69]<br>- ladder at [116,178]<br>- ladder at [171,159]<br>- ladder at [176,116]<br>- ladder at [178,90]<br>- ladder at [116,174]<br>- ladder at [147,176]<br>- ladder at [173,89]<br><br>##<h3>Internal Entrances<br>- Dining Tent at [144,17]<br>- Feros Cave at [125,10]<br>- Large PK Cave at [167,163]<br>- Small Cave (F) at [185,53]<br>- Tavern at [126,26]<br>- North Tent at [119,158]<br>- Small Cave (B) at [178,90]<br>- Small Cave (C) at [178,75]<br>- Small Cave (D) at [179,69]<br>- Small Cave (E) at [185,59]<br>- ... plus 18 more internal entrances (see CSV for full list).<br><br>#<h3>Desert Pines<br><br>Source: https://el-db.com/Desert_Pines.html<br>Counts -> Exits: 7, Teleports: 5, Same-map paths: 0, Internals: 18, Harvestables: 409<br><br>##<h3>Exits<br>- Kilaran Field at [371,265]<br>- Portland at [173,9]<br>- Portland at [367,315]<br>- Southern Kilaran at [370,53]<br>- Tahraji Desert at [8,222]<br>- Valley of the Dwarves at [366,331]<br>- Whitestone at [358,355]<br><br>##<h3>Teleports<br>- Telepad 1: [15,331] -> [357,201]<br>- Telepad 1: [358,196] -> [18,331]<br>- Telepad 2: [114,165] -> [366,23]<br>- Telepad 2: [367,16] -> [118,166]<br>- Telepad 3: [109,55] -> [115,68]<br><br>##<h3>Internal Entrances<br>- Aluwen Temple Building at [290,266]<br>- Cactus Blossom General Store at [330,334]<br>- Coal Cave (North) at [365,158]<br>- Coal Cave (South) at [364,92]<br>- Crystal Caves (via desert) at [148,226]<br>- Crystal Caves (via forest) at [45,298]<br>- Jewels and Gems Crafting School at [191,278]<br>- Kane's Ship at [358,358]<br>- Merry Soul Tavern at [309,338]<br>- Storage Cave at [166,100]<br>- ... plus 8 more internal entrances (see CSV for full list).<br><br>#<h3>Dungeon Instance<br><br>Source: https://el-db.com/Dungeon_Instance.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>#<h3>Egratia Point<br><br>Source: https://el-db.com/Egratia_Point.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 0, Internals: 3, Harvestables: 34<br><br>##<h3>Exits<br>- Aeth Aelfan at [12,162]<br>- Iscalrith at [57,46]<br>- Zirakinbar at [152,170]<br><br>##<h3>Internal Entrances<br>- Smuggler's Cave at [116,132]<br>- Temple at [44,140]<br>- Tent at [90,84]<br><br>#<h3>Emerald Valley Trade Route<br><br>Source: https://el-db.com/Emerald_Valley_Trade_Route.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 3, Internals: 11, Harvestables: 406<br><br>##<h3>Exits<br>- Idaloran at [326,372]<br>- Irsis at [13,248]<br>- Kusamura Jungle at [366,218]<br>- Willowvine Forest at [323,16]<br><br>##<h3>Same-Map Paths<br>- ladder at [336,91]<br>- ladder at [309,274]<br>- ladder at [366,124]<br><br>##<h3>Internal Entrances<br>- Mine (via Fast Read area) at [346,361]<br>- Monsters' Lair at [355,159]<br>- Tavern at [293,276]<br>- Tavern Basement (C) at [284,284]<br>- "The Reaper" Alchemy School (B) at [235,357]<br>- Big Tent (H) at [223,265]<br>- Blacksmith House (F) at [280,227]<br>- Meeting House (G) at [301,188]<br>- Red Witch Cave (D) at [21,44]<br>- Stonecutter Tent (I) at [260,253]<br>- ... plus 1 more internal entrances (see CSV for full list).<br><br>#<h3>Glacmor<br><br>Source: https://el-db.com/Glacmor.html<br>Counts -> Exits: 6, Teleports: 0, Same-map paths: 0, Internals: 25, Harvestables: 133<br><br>##<h3>Exits<br>- Aeth Aelfan at [197,244]<br>- Irinveron - North at [26,315]<br>- Irinveron - South at [24,41]<br>- Irsis at [146,250]<br>- Iscalrith at [362,232]<br>- Trassian at [375,98]<br><br>##<h3>Internal Entrances<br>- Abandoned Battle Arena at [12,296]<br>- Dra Se'Lac Market - General Store at [354,48]<br>- Dra Se'Lac Market - Tavern at [361,76]<br>- Enchanted Ice Magic Shop at [300,47]<br>- Galienne Runway at [277,120]<br>- Galienne Temple at [216,47]<br>- Skill Academy at [335,137]<br>- Waveneck Cave at [83,316]<br>- Waveneck Cave at [111,333]<br>- Waveneck Cave at [111,315]<br>- ... plus 15 more internal entrances (see CSV for full list).<br><br>#<h3>Grubani Peninsula<br><br>Source: https://el-db.com/Grubani_Peninsula.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 2, Internals: 6, Harvestables: 165<br><br>##<h3>Exits<br>- Naralik at [10,351]<br>- Portland at [320,123]<br>- Whitestone at [113,370]<br><br>##<h3>Same-Map Paths<br>- Mainland > Ranging Island at [51,92]<br>- Ranging Island > Mainland at [45,65]<br><br>##<h3>Internal Entrances<br>- Hut (B) at [17,247]<br>- Hut (C) at [292,76]<br>- Hut (D) at [321,106]<br>- Hut (E) at [286,72]<br>- Hut - Large (A) at [289,87]<br>- Hut - Ranging Island (F) at [56,56]<br><br>#<h3>Hall of Outhouses<br><br>Source: https://el-db.com/Hall_of_Outhouses.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 15<br><br>#<h3>Hulda<br><br>Source: https://el-db.com/Hulda.html<br>Counts -> Exits: 2, Teleports: 0, Same-map paths: 0, Internals: 1, Harvestables: 0<br><br>##<h3>Exits<br>- Iscalrith at [74,180]<br>- Trassian at [15,87]<br><br>##<h3>Internal Entrances<br>- Cave at [19,43]<br><br>#<h3>Hurquin<br><br>Source: https://el-db.com/Hurquin.html<br>Counts -> Exits: 2, Teleports: 2, Same-map paths: 1, Internals: 15, Harvestables: 256<br><br>##<h3>Exits<br>- Melinis at [128,99]<br>- South Redmoon at [151,92]<br><br>##<h3>Teleports<br>- Main boat to Moogle Isle: [14,78] -> [164,121]<br>- Moogle boat to Main: [164,117] -> [19,78]<br><br>##<h3>Same-Map Paths<br>- Storage fence at [111,160]<br><br>##<h3>Internal Entrances<br>- Cave at [53,152]<br>- Tavern at [88,60]<br>- Banca de Khafre (P) at [121,57]<br>- Chiropractor House (O) at [137,137]<br>- House (C) at [50,69]<br>- House (E) at [56,95]<br>- House (F) at [64,90]<br>- House (H) at [55,83]<br>- House (I) at [57,65]<br>- House (J) at [38,132]<br>- ... plus 5 more internal entrances (see CSV for full list).<br><br>#<h3>Ice Instance<br><br>Source: https://el-db.com/Ice_Instance.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>#<h3>Idaloran<br><br>Source: https://el-db.com/Idaloran.html<br>Counts -> Exits: 9, Teleports: 4, Same-map paths: 2, Internals: 49, Harvestables: 1619<br><br>##<h3>Exits<br>- Bethel at [732,544]<br>- Emerald Valley Trade Route at [448,38]<br>- Irinveron at [159,264]<br>- Irsis at [151,45]<br>- Kusamura Jungle at [631,12]<br>- Melinis at [159,247]<br>- North Redmoon at [158,230]<br>- Palon Vertas at [750,280]<br>- Port Anitora at [157,281]<br><br>##<h3>Teleports<br>- Telepad 1: [282,521] -> [577,63]<br>- Telepad 2: [135,86] -> [616,444]<br>- Telepad 2: [614,446] -> [133,88]<br>- Teleport 1: [574,64] -> [285,521]<br><br>##<h3>Same-Map Paths<br>- Nymorq Woods at [400,548]<br>- Rope - Up to Mine at [702,231]<br><br>##<h3>Internal Entrances<br>- Half-Raven Tavern at [466,294]<br>- Idaloran Magic Store at [370,291]<br>- Jahir Beach Cave - Beach entrance at [189,521]<br>- Mine - East Entrance at [702,191]<br>- Mine - West Entrance at [255,205]<br>- Nymorq Cave - Woods Entrance at [561,529]<br>- Samuel's Herbs at [439,180]<br>- Archery Building (B) at [370,303]<br>- Association of Scribes and Scholars Headquarters (R) at [379,234]<br>- Barn (X) at [212,286]<br>- ... plus 39 more internal entrances (see CSV for full list).<br><br>#<h3>Imbroglio Islands<br><br>Source: https://el-db.com/Imbroglio_Islands.html<br>Counts -> Exits: 2, Teleports: 0, Same-map paths: 0, Internals: 19, Harvestables: 37<br><br>##<h3>Exits<br>- Iscalrith at [37,265]<br>- Isle of the Forgotten - Igloo at [143,83]<br><br>##<h3>Internal Entrances<br>- Brio - Maze III at [92,120]<br>- Brio - Maze IV at [151,96]<br>- Brio - Maze IV at [94,102]<br>- Brio - Maze IV at [86,86]<br>- Brio - Maze V at [128,129]<br>- Galio (east) - Maze I at [242,311]<br>- Galio (east) - Maze II at [149,191]<br>- Galio (west) - Maze I at [143,178]<br>- Hadlioth - Maze I at [263,355]<br>- Ilo - Maze II at [57,193]<br>- ... plus 9 more internal entrances (see CSV for full list).<br><br>#<h3>Invance (in Iscalrith)<br><br>Source: https://el-db.com/Maps/1090.html<br>Counts -> Exits: 1, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 9<br><br>##<h3>Exits<br>- MM Battle Hall at [263,71]<br><br>#<h3>Irilion Portal Room<br><br>Source: https://el-db.com/Irilion_Portal_Room.html<br>Counts -> Exits: 0, Teleports: 4, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>##<h3>Teleports<br>- 1: [92,69] -> [48,153]<br>- 2: [98,70] -> [104,137]<br>- 3: [104,69] -> [150,153]<br>- 4: [98,60] -> [93,170]<br><br>#<h3>Irilion Underworld<br><br>Source: https://el-db.com/Irilion_Underworld.html<br>Counts -> Exits: 2, Teleports: 1, Same-map paths: 14, Internals: 0, Harvestables: 0<br><br>##<h3>Exits<br>- Idaloran at [95,20]<br>- Irinveron at [102,181]<br><br>##<h3>Teleports<br>- Telepad: [98,145] -> [147,19]<br><br>##<h3>Same-Map Paths<br>- apple (12) at [166,57]<br>- book (13) at [166,56]<br>- book (7) at [142,55]<br>- bottle (14) at [166,54]<br>- crystal ball - east (10) at [160,34]<br>- crystal ball - south (11) at [155,27]<br>- crystal ball - west (9) at [148,34]<br>- feather (3) at [130,39]<br>- shield (2) at [127,39]<br>- shield (5) at [140,57]<br>- sword (4) at [128,38]<br>- sword (8) at [140,54]<br>- tulip (1) at [128,41]<br>- tulip (6) at [139,55]<br><br>#<h3>Irinveron<br><br>Source: https://el-db.com/Irinveron.html<br>Counts -> Exits: 5, Teleports: 4, Same-map paths: 6, Internals: 31, Harvestables: 151<br><br>##<h3>Exits<br>- Arius at [187,663]<br>- Glacmor at [743,647]<br>- Glacmor at [745,298]<br>- Idaloran at [184,676]<br>- Iscalrith at [151,690]<br><br>##<h3>Teleports<br>- Telepad 1: [159,508] -> [674,209]<br>- Telepad 1: [677,212] -> [155,505]<br>- Telepad 2: [705,608] -> [169,239]<br>- Telepad 2: [171,237] -> [704,606]<br><br>##<h3>Same-Map Paths<br>- Boat - Diamond Island at [64,459]<br>- Boat - Mainland at [334,700]<br>- No-Magic PK Arena at [260,527]<br>- No-Magic PK Arena at [260,532]<br>- Polar Bear Cove Entrance at [118,249]<br>- Polar Bear Cove Exit at [104,243]<br><br>##<h3>Internal Entrances<br>- Altar Cave (Ca4) at [160,182]<br>- Blue Dragon Cave (Ca5) at [84,98]<br>- Candolis Blacksmith Shoppe at [325,551]<br>- Daa Gri Cave 2 at [648,105]<br>- Daa Gri Cave 2 at [646,119]<br>- Daa Gri Cave 2 at [639,122]<br>- Daa Gri Cave 2 at [609,71]<br>- Fisher's Forge Manu School at [75,363]<br>- Frostbitten Fish General Store at [156,536]<br>- Frozen Lake Tavern & Inn at [192,593]<br>- ... plus 21 more internal entrances (see CSV for full list).<br><br>#<h3>Irsis<br><br>Source: https://el-db.com/Irsis.html<br>Counts -> Exits: 8, Teleports: 0, Same-map paths: 5, Internals: 30, Harvestables: 265<br><br>##<h3>Exits<br>- Arius at [50,87]<br>- Emerald Valley Trade Route at [374,250]<br>- Glacmor at [59,63]<br>- Idaloran at [273,369]<br>- Iscalrith at [78,182]<br>- North Redmoon at [48,124]<br>- Port Anitora at [49,105]<br>- Zirakinbar at [82,134]<br><br>##<h3>Same-Map Paths<br>- ladder at [354,209]<br>- Lighthouse (down) at [183,324]<br>- Lighthouse (up) at [173,323]<br>- Mainland at [38,297]<br>- rope at [340,257]<br><br>##<h3>Internal Entrances<br>- Falling Leaf Tavern at [87,211]<br>- General Store at [159,123]<br>- Home of the Great Apothecary at [308,123]<br>- Independent Flower Shop at [124,104]<br>- Irsis School of the Chemist at [319,136]<br>- Irsis School of the Exquisite Adornment at [280,297]<br>- Ranging Arena at [353,357]<br>- Storage at [207,142]<br>- Blacksmith at [236,126]<br>- Council of Irsis (Q) at [268,67]<br>- ... plus 20 more internal entrances (see CSV for full list).<br><br>#<h3>Iscalrith<br><br>Source: https://el-db.com/Iscalrith.html<br>Counts -> Exits: 8, Teleports: 0, Same-map paths: 2, Internals: 44, Harvestables: 112<br><br>##<h3>Exits<br>- Egratia Point at [243,346]<br>- Glacmor at [14,173]<br>- Hulda at [319,15]<br>- Imbroglio Islands at [254,341]<br>- Irinveron at [272,344]<br>- Irsis at [290,338]<br>- Isle of the Forgotten - Igloo at [200,77]<br>- Trassian - Cave at [58,135]<br><br>##<h3>Same-Map Paths<br>- Boat - enter city at [116,115]<br>- Boat - exit city at [117,74]<br><br>##<h3>Internal Entrances<br>- Fort Telmont Tavern at [252,63]<br>- Iron Cave 1 (8) at [37,70]<br>- Iron Cave 2 (2) at [32,55]<br>- Kiara's General Store at [255,246]<br>- Quartz and Silver Cave (11) at [58,37]<br>- Quartz and Silver Cave (5) at [50,37]<br>- Quartz and Silver Cave (6) at [46,60]<br>- Sapphire and Coal Cave (10) at [53,75]<br>- Silver Cave (L) at [108,68]<br>- Small Yeti Cave (7) at [50,50]<br>- ... plus 34 more internal entrances (see CSV for full list).<br><br>#<h3>Isla Prima<br><br>Source: https://el-db.com/Isla_Prima.html<br>Counts -> Exits: 1, Teleports: 2, Same-map paths: 0, Internals: 6, Harvestables: 78<br><br>##<h3>Exits<br>- Whitestone at [23,21]<br><br>##<h3>Teleports<br>- Boat: [177,141] -> [78,57]<br>- Boat: [80,58] -> [176,139]<br><br>##<h3>Internal Entrances<br>- Pula's Tavern at [66,134]<br>- Rat Cave at [40,70]<br>- Tower at [122,153]<br>- House (B) at [82,92]<br>- House (C) at [98,161]<br>- House - Granny Lorpack (A) at [74,149]<br><br>#<h3>Isle of the Forgotten<br><br>Source: https://el-db.com/Isle_of_the_Forgotten.html<br>Counts -> Exits: 2, Teleports: 0, Same-map paths: 0, Internals: 6, Harvestables: 46<br><br>##<h3>Exits<br>- Igloo - Imbroglio Islands at [134,125]<br>- Igloo - Iscalrith at [134,131]<br><br>##<h3>Internal Entrances<br>- Immemor Crafting Shop at [84,94]<br>- Lost Thoughts Tavern at [40,130]<br>- Temple of Dryx (A) at [33,24]<br>- House (P) at [39,151]<br>- House (R) at [54,154]<br>- House of Restoration (Q) at [60,124]<br><br>#<h3>Kilaran Field<br><br>Source: https://el-db.com/Kilaran_Field.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 0, Internals: 1, Harvestables: 83<br><br>##<h3>Exits<br>- Desert Pines at [16,45]<br>- Southern Kilaran at [87,23]<br>- Valley of the Dwarves at [175,98]<br><br>##<h3>Internal Entrances<br>- Fort Mardyn Tower at [79,70]<br><br>#<h3>Kusamura Jungle<br><br>Source: https://el-db.com/Kusamura_Jungle.html<br>Counts -> Exits: 7, Teleports: 0, Same-map paths: 0, Internals: 2, Harvestables: 357<br><br>##<h3>Exits<br>- Aeth Aelfan at [254,5]<br>- Emerald Valley Trade Route at [5,202]<br>- Idaloran at [230,366]<br>- Palon Vertas at [334,368]<br>- Palon Vertas - boat at [171,203]<br>- Willowvine Forest - Titanium Cave at [103,14]<br>- Zirakinbar at [366,118]<br><br>##<h3>Internal Entrances<br>- Coal Cave at [334,259]<br>- Temple of Goddess Varyssa at [273,215]<br><br>#<h3>Melinis<br><br>Source: https://el-db.com/Melinis.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 4, Internals: 26, Harvestables: 698<br><br>##<h3>Exits<br>- Hurquin at [244,267]<br>- Idaloran at [213,268]<br>- Sedicolis at [33,89]<br>- Thelinor - Cave at [209,26]<br><br>##<h3>Same-Map Paths<br>- ladder - east wall at [283,133]<br>- ladder - north wall at [201,314]<br>- South City Gate at [241,102]<br>- West City Gate at [126,272]<br><br>##<h3>Internal Entrances<br>- Blacksmith Shop at [169,276]<br>- Fire Cave at [168,144]<br>- Iron Cave at [25,326]<br>- Potion School at [27,29]<br>- Sewer (Storage) at [278,343]<br>- Sewer (Storage) at [151,221]<br>- Sulfur Cave at [129,189]<br>- Summon Academy at [21,296]<br>- The Hideout - Back Room at [109,340]<br>- Crystal Water Tavern at [272,178]<br>- ... plus 16 more internal entrances (see CSV for full list).<br><br>#<h3>Morcraven Marsh<br><br>Source: https://el-db.com/Morcraven_Marsh.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 0, Internals: 19, Harvestables: 372<br><br>##<h3>Exits<br>- Naralik at [187,12]<br>- Portland at [248,369]<br>- Whitestone at [369,290]<br><br>##<h3>Internal Entrances<br>- Alchemy School at [323,143]<br>- Battle Hall at [62,84]<br>- Blacksmith Archery Shop at [277,65]<br>- General Store at [202,160]<br>- Gold Cave at [225,14]<br>- Jayden Temple at [151,358]<br>- Kelcha's Tannery House (A) at [284,253]<br>- Potion School at [185,163]<br>- Silver Cave at [327,345]<br>- Tavern at [218,179]<br>- ... plus 9 more internal entrances (see CSV for full list).<br><br>#<h3>Mountain Instance<br><br>Source: https://el-db.com/Mountain_Instance.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>#<h3>Naralik<br><br>Source: https://el-db.com/Naralik.html<br>Counts -> Exits: 2, Teleports: 0, Same-map paths: 0, Internals: 4, Harvestables: 87<br><br>##<h3>Exits<br>- Grubani Peninsula at [179,67]<br>- Morcraven Marsh at [39,178]<br><br>##<h3>Internal Entrances<br>- Catacombs at [105,162]<br>- Magic Arenas at [154,177]<br>- House (A) at [155,86]<br>- House (B) at [131,59]<br><br>#<h3>Nordcarn<br><br>Source: https://el-db.com/Nordcarn.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 0, Internals: 12, Harvestables: 151<br><br>##<h3>Exits<br>- Southern Kilaran at [7,31]<br>- Valley of the Dwarves at [51,184]<br>- Whitestone at [69,8]<br><br>##<h3>Internal Entrances<br>- General Store at [136,98]<br>- Glilin Temple - Entrance Hall at [9,151]<br>- Hard Rock Tavern (North Entrance) at [130,134]<br>- Hard Rock Tavern (South Entrance) at [129,122]<br>- Magic Shop at [108,80]<br>- North Cave at [186,131]<br>- South Cave at [181,38]<br>- Storage at [168,16]<br>- House (L) at [124,55]<br>- House (M) at [141,62]<br>- ... plus 2 more internal entrances (see CSV for full list).<br><br>#<h3>North Redmoon<br><br>Source: https://el-db.com/North_Redmoon.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 2, Internals: 17, Harvestables: 325<br><br>##<h3>Exits<br>- Idaloran at [335,354]<br>- Irsis at [320,370]<br>- South Redmoon at [264,18]<br>- Thelinor at [306,347]<br><br>##<h3>Same-Map Paths<br>- ladder at [302,225]<br>- ladder at [264,298]<br><br>##<h3>Internal Entrances<br>- Dragon Breath Tavern at [246,270]<br>- North Redmoon Blacksmithing School at [227,314]<br>- North Redmoon Blacksmithing School at [213,293]<br>- Redmoon Library at [275,291]<br>- Volcano at [175,158]<br>- Harglum's Blacksmith Shop (A) at [311,228]<br>- House (D) at [249,284]<br>- House (J) at [299,275]<br>- North Redmoon General Store at [293,277]<br>- North Redmoon Storage House (C) at [212,245]<br>- ... plus 7 more internal entrances (see CSV for full list).<br><br>#<h3>Palon Vertas<br><br>Source: https://el-db.com/Palon_Vertas.html<br>Counts -> Exits: 7, Teleports: 0, Same-map paths: 2, Internals: 27, Harvestables: 922<br><br>##<h3>Exits<br>- Bethel at [183,370]<br>- Idaloran at [13,254]<br>- Kusamura Jungle at [47,19]<br>- Kusamura Jungle (via boat) at [261,125]<br>- Sedicolis at [317,365]<br>- Thelinor at [371,274]<br>- Zirakinbar at [326,20]<br><br>##<h3>Same-Map Paths<br>- Magic School area entrance at [38,214]<br>- Magic School area exit at [38,246]<br><br>##<h3>Internal Entrances<br>- Aisy's Daisy Flower Emporium at [325,194]<br>- Blacksmith Cave at [360,359]<br>- Crypt Cave at [35,172]<br>- Gold Cave at [114,21]<br>- Green Leaf Tavern at [335,41]<br>- Magic School at [43,364]<br>- Salingen General Store at [294,180]<br>- Barn (P) at [219,155]<br>- City Hall (CH1) at [181,158]<br>- Fishing Cabin (L) at [216,46]<br>- ... plus 17 more internal entrances (see CSV for full list).<br><br>#<h3>Port Anitora<br><br>Source: https://el-db.com/Port_Anitora.html<br>Counts -> Exits: 3, Teleports: 2, Same-map paths: 0, Internals: 0, Harvestables: 108<br><br>##<h3>Exits<br>- Idaloran at [290,182]<br>- Irsis at [281,215]<br>- Whitestone - cave at [86,170]<br><br>##<h3>Teleports<br>- To North Island: [133,227] -> [216,301]<br>- To West Island: [215,299] -> [131,226]<br><br>#<h3>Portland<br><br>Source: https://el-db.com/Portland.html<br>Counts -> Exits: 7, Teleports: 0, Same-map paths: 0, Internals: 25, Harvestables: 244<br><br>##<h3>Exits<br>- Desert Pines at [169,372]<br>- Desert Pines at [147,57]<br>- Grubani Peninsula at [139,26]<br>- Morcraven Marsh at [314,16]<br>- Tahraji Desert at [22,289]<br>- Tarsengaard at [194,65]<br>- Whitestone at [373,167]<br><br>##<h3>Internal Entrances<br>- Bank (F) at [130,93]<br>- Blacksmith Shop at [274,90]<br>- Botanical Magic Library at [176,205]<br>- Clark's Crafting Corner at [198,257]<br>- General Store at [192,93]<br>- Magic Apple Tavern & Inn at [178,108]<br>- Magic Apple Tavern & Inn (side) at [183,114]<br>- Manu School at [91,104]<br>- Portia's Potion School at [282,269]<br>- Portia's Potion School at [264,269]<br>- ... plus 15 more internal entrances (see CSV for full list).<br><br>#<h3>Ruins of Tirnym<br><br>Source: https://el-db.com/Ruins_of_Tirnym.html<br>Counts -> Exits: 1, Teleports: 0, Same-map paths: 0, Internals: 2, Harvestables: 111<br><br>##<h3>Exits<br>- Whitestone at [59,185]<br><br>##<h3>Internal Entrances<br>- Cave to Tirnym Past at [98,50]<br>- Tirnym Magic School at [33,90]<br><br>#<h3>Sedicolis<br><br>Source: https://el-db.com/Sedicolis.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 0, Internals: 6, Harvestables: 135<br><br>##<h3>Exits<br>- Bethel at [12,106]<br>- Melinis at [180,48]<br>- Palon Vertas at [120,11]<br><br>##<h3>Internal Entrances<br>- Cave of Merciful Tears at [153,43]<br>- Shop of Many Magics at [19,24]<br>- The Rat and the Snake Eye Tavern at [54,30]<br>- Eveline's Tent at [45,119]<br>- Stonecutter's Workshop at [93,40]<br>- Well-Maintained House at [18,29]<br><br>#<h3>Seridia Portal Room<br><br>Source: https://el-db.com/Seridia_Portal_Room.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>#<h3>Seridia Underworld<br><br>Source: https://el-db.com/Seridia_Underworld.html<br>Counts -> Exits: 1, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>##<h3>Exits<br>- Isla Prima at [98,170]<br><br>#<h3>South Redmoon<br><br>Source: https://el-db.com/South_Redmoon.html<br>Counts -> Exits: 3, Teleports: 0, Same-map paths: 1, Internals: 11, Harvestables: 430<br><br>##<h3>Exits<br>- Hurquin at [175,13]<br>- North Redmoon at [77,359]<br>- Zirakinbar at [189,35]<br><br>##<h3>Same-Map Paths<br>- ladder at [153,166]<br><br>##<h3>Internal Entrances<br>- Iron Cave at [272,308]<br>- Mountain Spring Tavern & Inn at [197,265]<br>- Nargash General Store at [183,268]<br>- Nargash Storage at [170,204]<br>- Garden House (H) at [160,244]<br>- Nar's Island House (D) at [139,94]<br>- Nar's Island House (E) at [139,67]<br>- Nar's Island Supply House (C) at [175,81]<br>- Nargash Village Barn (G) at [228,241]<br>- Nargash Village House (F) at [200,227]<br>- ... plus 1 more internal entrances (see CSV for full list).<br><br>#<h3>Southern Kilaran Field<br><br>Source: https://el-db.com/Southern_Kilaran_Field.html<br>Counts -> Exits: 4, Teleports: 1, Same-map paths: 3, Internals: 5, Harvestables: 68<br><br>##<h3>Exits<br>- Desert Pines at [16,56]<br>- Kilaran Field at [87,177]<br>- Nordcarn at [178,62]<br>- Whitestone at [103,14]<br><br>##<h3>Teleports<br>- Telepad into Summon Arena center: [39,176] -> [28,158]<br><br>##<h3>Same-Map Paths<br>- Enter Summon Arena area at [44,165]<br>- Exit Summon Arena area at [41,165]<br>- Exit Summon Arena center at [28,161]<br><br>##<h3>Internal Entrances<br>- Carmien Manor at [145,158]<br>- House (A) at [165,43]<br>- House (B) at [163,48]<br>- House (C) at [168,30]<br>- House (D) at [147,25]<br><br>#<h3>Swamp Instance<br><br>Source: https://el-db.com/Swamp_Instance.html<br>Counts -> Exits: 0, Teleports: 0, Same-map paths: 0, Internals: 0, Harvestables: 0<br><br>#<h3>Tahraji Desert<br><br>Source: https://el-db.com/Tahraji_Desert.html<br>Counts -> Exits: 2, Teleports: 0, Same-map paths: 1, Internals: 4, Harvestables: 125<br><br>##<h3>Exits<br>- Desert Pines at [378,329]<br>- Portland at [376,49]<br><br>##<h3>Same-Map Paths<br>- Tahraji Desert Main at [153,279]<br><br>##<h3>Internal Entrances<br>- Dragon Cave at [371,20]<br>- Dragon Cave from Summon Arena at [153,254]<br>- Dragon Cave from Summon Arena thrones at [153,279]<br>- Tent at [284,52]<br><br>#<h3>Tarsengaard<br><br>Source: https://el-db.com/Tarsengaard.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 1, Internals: 22, Harvestables: 477<br><br>##<h3>Exits<br>- Nordcarn North Cave at [40,64]<br>- Portland at [138,303]<br>- Valley of the Dwarves at [15,269]<br>- Whitestone at [337,12]<br><br>##<h3>Same-Map Paths<br>- Wall Ladders at [134,218]<br><br>##<h3>Internal Entrances<br>- Gargoyle Cave at [47,52]<br>- Garrison Barracks (A) at [177,189]<br>- Magic School Entrance Hall at [183,315]<br>- Orvimon Crypt at [152,25]<br>- Sapphire Rose Tavern & Inn at [179,214]<br>- Seridian Academy of Science and Engineering at [87,41]<br>- Storage at [199,184]<br>- Tailoring Store at [207,247]<br>- Tarsengaard Jewel Academy at [260,204]<br>- Temple of Zarin at [324,60]<br>- ... plus 12 more internal entrances (see CSV for full list).<br><br>#<h3>Thelinor<br><br>Source: https://el-db.com/Thelinor.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 7, Internals: 20, Harvestables: 312<br><br>##<h3>Exits<br>- Melinis - cave at [293,365]<br>- North Redmoon at [272,265]<br>- Palon Vertas at [15,269]<br>- Zirakinbar at [46,9]<br><br>##<h3>Same-Map Paths<br>- ladder at [65,174]<br>- ladder at [105,173]<br>- ladder at [287,208]<br>- ladder at [237,350]<br>- ladder at Fort Marsh 1 at [65,179]<br>- ladder at Fort Marsh 2 at [106,177]<br>- ladder near PK arena at [244,350]<br><br>##<h3>Internal Entrances<br>- Cave 1 - East Entrance at [347,125]<br>- Cave 1 - South Entrance at [145,15]<br>- Cave 2 - South Entrance at [170,62]<br>- Cave 2 - West Entrance at [20,152]<br>- Cave 3 - East Entrance at [200,368]<br>- Cave 3 - West Entrance at [128,326]<br>- Cave 4 - North Entrance at [229,119]<br>- Cave 4 - South Entrance at [230,65]<br>- Loose Cannon Tavern at [265,300]<br>- Volcano at [285,239]<br>- ... plus 10 more internal entrances (see CSV for full list).<br><br>#<h3>Tirnym Past<br><br>Source: https://el-db.com/Tirnym_Past.html<br>Counts -> Exits: 1, Teleports: 0, Same-map paths: 0, Internals: 11, Harvestables: 327<br><br>##<h3>Exits<br>- Ruins of Tirnym (via PD) at [33,89]<br><br>##<h3>Internal Entrances<br>- Depository (PG) at [56,171]<br>- House (PF) at [74,173]<br>- House (PH) at [58,140]<br>- House (PI) at [69,134]<br>- House (PJ) at [116,93]<br>- House - Back Door (PJ) at [122,104]<br>- Internal House (PE) at [115,128]<br>- Past Cave at [101,60]<br>- Perky Posy Emporium (PB) at [143,47]<br>- Tirnym Shop of Magical Wonders (PA) at [133,46]<br>- ... plus 1 more internal entrances (see CSV for full list).<br><br>#<h3>Token Map<br><br>Source: https://el-db.com/Token_Map.html<br>Counts -> Exits: 1, Teleports: 0, Same-map paths: 1, Internals: 8, Harvestables: 542<br><br>##<h3>Exits<br>- Arius at [96,47]<br><br>##<h3>Same-Map Paths<br>- Garden Gate at [100,91]<br><br>##<h3>Internal Entrances<br>- Alchemy Shop (B) at [82,135]<br>- Garden House (A) at [116,122]<br>- House of Manufacturing (C) at [132,154]<br>- New Beginnings Tavern at [101,141]<br>- Potion Shop (D) at [86,116]<br>- Quiet Cave at [46,175]<br>- Sulfur Cave at [102,168]<br>- Tent (F) at [41,164]<br><br>#<h3>Trassian<br><br>Source: https://el-db.com/Trassian.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 0, Internals: 34, Harvestables: 50<br><br>##<h3>Exits<br>- Glacmor at [5,171]<br>- Hulda at [184,134]<br>- Iscalrith (Cave) at [47,182]<br>- Iscalrith (Storage) at [110,136]<br><br>##<h3>Internal Entrances<br>- Ancient Draegoni Fighting Academy (Z) at [118,182]<br>- Arctic Chimeran Passageway (P) at [11,134]<br>- Arctic Chimeran Passageway (Q) at [14,92]<br>- Deepstone Caverns (X) at [178,12]<br>- Draegoni Blacksmith School (N) at [6,61]<br>- Icy Sheath Tavern at [24,180]<br>- Magic Arena (M) at [20,72]<br>- PK Cave (L) at [19,58]<br>- Saret's Cave (AA) at [12,49]<br>- Wizard's Passage (A) at [152,86]<br>- ... plus 24 more internal entrances (see CSV for full list).<br><br>#<h3>Valley of the Dwarves<br><br>Source: https://el-db.com/Valley_of_the_Dwarves.html<br>Counts -> Exits: 4, Teleports: 0, Same-map paths: 0, Internals: 8, Harvestables: 122<br><br>##<h3>Exits<br>- Desert Pines at [76,170]<br>- Kilaran Field at [9,127]<br>- Nordcarn at [69,8]<br>- Tarsengaard at [164,145]<br><br>##<h3>Internal Entrances<br>- Ancient Temple at [150,91]<br>- Flower Shop and Blacksmith at [33,138]<br>- General Store at [86,138]<br>- Gold Cave Level 1 at [16,20]<br>- Moonshadow Tavern at [88,124]<br>- Dragon Lair (C) at [129,18]<br>- House (A) at [47,138]<br>- House of the Rivan Warriors (B) at [55,138]<br><br>#<h3>White Stone<br><br>Source: https://el-db.com/White_Stone.html<br>Counts -> Exits: 10, Teleports: 4, Same-map paths: 6, Internals: 52, Harvestables: 2088<br><br>##<h3>Exits<br>- Desert Pines at [720,137]<br>- Grubani Peninsula at [110,47]<br>- Isla Prima at [705,157]<br>- Morcraven Marsh at [101,261]<br>- Nordcarn at [302,757]<br>- Port Anitora - docks at [403,30]<br>- Portland at [16,564]<br>- Ruins of Tirnym at [566,17]<br>- Southern Kilaran at [139,759]<br>- Tarsengaard at [712,752]<br><br>##<h3>Teleports<br>- Telepad 1: [84,520] -> [508,138]<br>- Telepad 1: [509,147] -> [84,528]<br>- Telepad 2: [143,259] -> [482,514]<br>- Telepad 2: [484,518] -> [144,248]<br><br>##<h3>Same-Map Paths<br>- Alchemy School Entrance at [704,567]<br>- Alchemy School Exit at [718,570]<br>- Summon Arena Enter Ladder at [166,102]<br>- Summon Arena Exit Ladder at [165,94]<br>- Summon Arena North Stand at [175,107]<br>- Summon Arena South Stand at [175,73]<br><br>##<h3>Internal Entrances<br>- Aluwen Temple at [643,687]<br>- Black Bear General Store at [168,625]<br>- Blue Falcon Tavern & Inn at [154,145]<br>- City Sewers at [13,597]<br>- City Sewers at [159,733]<br>- City Sewers at [123,618]<br>- City Sewers at [201,633]<br>- City Sewers at [71,692]<br>- Diamond Cave at [345,750]<br>- Drunken Pony Tavern at [589,151]<br>- ... plus 42 more internal entrances (see CSV for full list).<br><br>#<h3>Willowvine Forest<br><br>Source: https://el-db.com/Willowvine_Forest.html<br>Counts -> Exits: 4, Teleports: 7, Same-map paths: 1, Internals: 14, Harvestables: 845<br><br>##<h3>Exits<br>- Aeth Aelfan at [381,293]<br>- Arius at [36,348]<br>- Emerald Valley Trade Route at [217,382]<br>- Kusamura Jungle - Titanium Cave at [338,369]<br><br>##<h3>Teleports<br>- Telepad A: [223,374] -> [165,104]<br>- Telepad A: [165,101] -> [217,376]<br>- Telepad B: [322,145] -> [181,104]<br>- Telepad B: [191,104] -> [325,142]<br>- Telepad C: [325,147] -> [322,318]<br>- Telepad C: [322,317] -> [325,142]<br>- Telepad D: [291,370] -> [53,318]<br><br>##<h3>Same-Map Paths<br>- ladder at [217,368]<br><br>##<h3>Internal Entrances<br>- Rods & Reels General Store at [145,362]<br>- Temple of Suffering at [227,172]<br>- Willowvine Skill Academy at [175,121]<br>- Aislinn's House (H) at [310,143]<br>- Eventhil Tree House - Lower (F) at [148,183]<br>- Eventhil Tree House - Upper (F) at [142,185]<br>- Fishmig Village Large House (C) at [124,312]<br>- Leavan Vale Tree House - Lower (D) at [263,323]<br>- Leavan Vale Tree House - Upper (D) at [266,330]<br>- Lynthorp Tree House - Lower (G) at [342,115]<br>- ... plus 4 more internal entrances (see CSV for full list).<br><br>#<h3>Zirakinbar<br><br>Source: https://el-db.com/Zirakinbar.html<br>Counts -> Exits: 7, Teleports: 4, Same-map paths: 3, Internals: 20, Harvestables: 234<br><br>##<h3>Exits<br>- Aeth Aelfan at [308,75]<br>- Egratia Point at [161,14]<br>- Irsis at [302,115]<br>- Kusamura Jungle at [21,94]<br>- Palon Vertas at [182,359]<br>- South Redmoon at [291,94]<br>- Thelinor at [242,350]<br><br>##<h3>Teleports<br>- Teleport 1: [36,43] -> [330,293]<br>- Teleport 1: [331,295] -> [37,45]<br>- Teleport 2: [25,357] -> [318,28]<br>- Teleport 2: [320,27] -> [27,355]<br><br>##<h3>Same-Map Paths<br>- Cage Lock at [42,277]<br>- Cove gate at [260,331]<br>- ladder at [23,176]<br><br>##<h3>Internal Entrances<br>- Abandoned Cave at [208,94]<br>- AzaghÃ¢l's Castle at [104,123]<br>- Fiery Forge General Store - Upper Level (GS1) at [29,306]<br>- North Zirakgunda at [272,353]<br>- The Ale House - Upper Level (Ta1) at [72,359]<br>- Zirakgunda Stairwell (J) at [58,366]<br>- Zirakinbar Bookshop - Upper Level (Li1) at [31,320]<br>- Abandoned Bank (E) at [80,281]<br>- Abandoned Meeting Hall (C) at [71,314]<br>- Blacksmith Cave House (D) at [46,345]<br>- ... plus 10 more internal entrances (see CSV for full list).<br><br>
+        </div>
+        <div class="content">
+    
+        <h3>Guild Entrance Seed Data</h3>
+        <p>Use this as a scouting checklist and verify each entry in game.</p>
+        <div class="stats">
+            <div class='stat-box'><div class='number'>31</div><div class='label'>Seed Entries</div></div>
+            <div class='stat-box'><div class='number'>31</div><div class='label'>Guilds</div></div>
+            <div class='stat-box'><div class='number'>17</div><div class='label'>Maps</div></div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Guild</th>
+                        <th>Map</th>
+                        <th>Entrance</th>
+                        <th>Exit</th>
+                        <th>Guardbot</th>
+                    </tr>
+                </thead>
+                <tbody>
+        
+                    <tr>
+                        <td>GWAR</td>
+                        <td>Aeth Aelfan</td>
+                        <td><code>[365,275]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>KotP</td>
+                        <td>Aeth Aelfan</td>
+                        <td><code>[330,160]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>EgoW</td>
+                        <td>Arius</td>
+                        <td><code>[290,265]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>Iron</td>
+                        <td>Desert Pines</td>
+                        <td><code>[220,120]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>-L-E-</td>
+                        <td>Emerald Valley Trade Route</td>
+                        <td><code>[260,200]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>KD</td>
+                        <td>Emerald Valley Trade Route</td>
+                        <td><code>[290,365]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>LION</td>
+                        <td>Emerald Valley Trade Route</td>
+                        <td><code>[265,275]</code></td>
+                        <td><code></code></td>
+                        <td>Yes (Unforgivin)</td>
+                    </tr>
+            
+                    <tr>
+                        <td>BoC</td>
+                        <td>Idaloran</td>
+                        <td><code>[530,160]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>DD</td>
+                        <td>Idaloran</td>
+                        <td><code>[373,292]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>FD</td>
+                        <td>Irsis</td>
+                        <td><code>[45,100]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>*KA*</td>
+                        <td>Naralik</td>
+                        <td><code>[75,85]</code></td>
+                        <td><code></code></td>
+                        <td>Yes (Ellstren)</td>
+                    </tr>
+            
+                    <tr>
+                        <td>LNX</td>
+                        <td>Nordcarn South Cave</td>
+                        <td><code>[100,50]</code></td>
+                        <td><code></code></td>
+                        <td>Yes (name unknown)</td>
+                    </tr>
+            
+                    <tr>
+                        <td>Riva</td>
+                        <td>Palon Vertas</td>
+                        <td><code>[203,186]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>***</td>
+                        <td>Portland</td>
+                        <td><code>[120,20]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>DaO</td>
+                        <td>Portland</td>
+                        <td><code>[50,190]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>segV</td>
+                        <td>Portland</td>
+                        <td><code>[230,80]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>LGC</td>
+                        <td>South Redmoon</td>
+                        <td><code>[179,63]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>DoA</td>
+                        <td>Tarsengaard</td>
+                        <td><code>[187,70]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>Ozu!</td>
+                        <td>Tarsengaard Docks</td>
+                        <td><code>[130,310]</code></td>
+                        <td><code></code></td>
+                        <td>Yes (Tasmani)</td>
+                    </tr>
+            
+                    <tr>
+                        <td>#nU</td>
+                        <td>Tarsengaard Island</td>
+                        <td><code>[340,300]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>LotS</td>
+                        <td>Tarsengaard Island</td>
+                        <td><code>[280,350]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>*CO*</td>
+                        <td>Valley of the Dwarves</td>
+                        <td><code>[40,180]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>L.A.</td>
+                        <td>Valley of the Dwarves</td>
+                        <td><code>[60,90]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>PkG</td>
+                        <td>Valley of the Dwarves</td>
+                        <td><code>[80,120]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>PL</td>
+                        <td>Valley of the Dwarves Docks</td>
+                        <td><code>[71,158]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>^@^</td>
+                        <td>Valley of the Dwarves Docks</td>
+                        <td><code>[70,160]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>BARD</td>
+                        <td>White Stone</td>
+                        <td><code>[230,420]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>LLL</td>
+                        <td>White Stone</td>
+                        <td><code>[22,760]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>[NL]</td>
+                        <td>White Stone</td>
+                        <td><code>[420,166]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>sitU</td>
+                        <td>White Stone</td>
+                        <td><code>[112,680]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                    <tr>
+                        <td>~O~</td>
+                        <td>White Stone</td>
+                        <td><code>[685,108]</code></td>
+                        <td><code></code></td>
+                        <td>Unknown</td>
+                    </tr>
+            
+                </tbody>
+            </table>
+        </div>
+        
+        </div>
+    </div>
+    
+    <footer>
+        <p>Lion Guild ELDB - Eternal Lands Database</p>
+        <p>Generated: 2026-04-21 15:42:52</p>
+        <p><small>Data sourced from el-db.com | Updated weekly</small></p>
+    </footer>
+</body>
+</html>

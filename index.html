@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lion Guild ELDB - Eternal Lands Database</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #D4AF37;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        header p {
+            font-size: 0.95em;
+            opacity: 0.95;
+            margin-bottom: 10px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tabs a {
+            background: #D4AF37;
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs a:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #D4AF37;
+            border-radius: 4px;
+        }
+        
+        .search-box input, .search-box select {
+            padding: 10px;
+            margin: 5px 10px 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        
+        .search-box button {
+            padding: 10px 20px;
+            background: #D4AF37;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .search-box button:hover {
+            background: #8B4513;
+            color: #D4AF37;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 70vh;
+            margin-top: 20px;
+            border: 1px solid #e6e6e6;
+            border-radius: 6px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95em;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            color: #D4AF37;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 2px solid #D4AF37;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: linear-gradient(135deg, #1a1a1a 0%, #8B4513 100%);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        
+        th:hover {
+            background: #8B4513;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        tbody tr:hover {
+            background: #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #8B4513 0%, #1a1a1a 100%);
+            color: #D4AF37;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-box .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        footer {
+            background: #1a1a1a;
+            color: #D4AF37;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 2px solid #D4AF37;
+        }
+        
+        .filter-count {
+            color: #8B4513;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8em; }
+            .container { padding: 10px; }
+            .content { padding: 15px; }
+            table { font-size: 0.85em; }
+            th, td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="container">
+        <h1>⚜️ Lion Guild Database</h1>
+        <p>Eternal Lands Knowledge Base - Maps, Resources, and Routes</p>
+        <div class="nav-tabs">
+            <a href="harvestables.html">🌾 Harvestables</a>
+            <a href="secrets.html">🌀 Secret Passages</a>
+            <a href="creatures.html">⚔️ Creatures</a>
+            <a href="guilds.html">🏰 Guild Entrances</a>
+            <a href="routes.html">📍 Route Guide</a>
+            <a href="custom-query.html">🔍 Custom Query</a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="content">
+            <h2 style="color: #D4AF37; margin-bottom: 25px;">Database Overview</h2>
+            
+            <div class="stats">
+                <div class='stat-box'>
+                    <div class='number'>5108</div>
+                    <div class='label'>Harvestable Locations</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='number'>138</div>
+                    <div class='label'>Secret Routes</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='number'>2207</div>
+                    <div class='label'>Creature Spawns</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='number'>187</div>
+                    <div class='label'>Maps</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='number'>31</div>
+                    <div class='label'>Guild Entrances</div>
+                </div>
+            </div>
+    
+            <div class="stats" style="margin-top: 14px;">
+                <div class='stat-box'>
+                    <div class='number'>185/206</div>
+                    <div class='label'>Official Secrets Found</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='number'>89%</div>
+                    <div class='label'>Official Secret Completion</div>
+                </div>
+            </div>
+        
+        </div>
+        
+        <div class="content" style="margin-top: 30px;">
+            <h2 style="color: #D4AF37; margin-bottom: 20px;">Quick Links</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="border-left: 4px solid #D4AF37; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                    <h3>🌾 <a href="harvestables.html" style="text-decoration: none; color: #1a1a1a;">Harvestable Locations</a></h3>
+                    <p>Find where to harvest herbs, plants, and other resources on each map.</p>
+                </div>
+                
+                <div style="border-left: 4px solid #D4AF37; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                    <h3>🌀 <a href="secrets.html" style="text-decoration: none; color: #1a1a1a;">Secret Passages</a></h3>
+                    <p>Discover hidden routes, portals, and secret passages between maps.</p>
+                </div>
+                
+                <div style="border-left: 4px solid #D4AF37; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                    <h3>⚔️ <a href="creatures.html" style="text-decoration: none; color: #1a1a1a;">Creature Spawns</a></h3>
+                    <p>Location data for monsters and creatures you'll encounter.</p>
+                </div>
+
+                <div style="border-left: 4px solid #D4AF37; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                    <h3>🏰 <a href="guilds.html" style="text-decoration: none; color: #1a1a1a;">Guild Entrances</a></h3>
+                    <p>Guild map entrance secrets with map and coordinate filters.</p>
+                </div>
+                
+                <div style="border-left: 4px solid #D4AF37; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                    <h3>📍 <a href="routes.html" style="text-decoration: none; color: #1a1a1a;">Route Guide</a></h3>
+                    <p>Multi-map routes and transition paths for efficient traveling.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content" style="margin-top: 30px;">
+            <h2 style="color: #D4AF37; margin-bottom: 20px;">Quick Queries</h2>
+            <p style="margin-bottom: 14px; color: #555;">Search from the dashboard or open full pages with all records.</p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+                <div style="border-left: 4px solid #D4AF37; padding: 14px; background: #f9f9f9; border-radius: 4px;">
+                    <h3 style="margin-bottom: 8px;">🌀 Secrets Query</h3>
+                    <input id="qSecretsMap" type="text" placeholder="Source map" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <input id="qSecretsDest" type="text" placeholder="Destination" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <button onclick="openQuery('secrets.html', [['map','qSecretsMap'], ['destination','qSecretsDest']])">Search</button>
+                    <button onclick="window.location.href='secrets.html'" style="margin-left:8px;">Show All</button>
+                </div>
+
+                <div style="border-left: 4px solid #D4AF37; padding: 14px; background: #f9f9f9; border-radius: 4px;">
+                    <h3 style="margin-bottom: 8px;">🏰 Guild Maps Query</h3>
+                    <input id="qGuildMap" type="text" placeholder="Map" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <input id="qGuildName" type="text" placeholder="Guild" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <button onclick="openQuery('guilds.html', [['map','qGuildMap'], ['guild','qGuildName']])">Search</button>
+                    <button onclick="window.location.href='guilds.html'" style="margin-left:8px;">Show All</button>
+                </div>
+
+                <div style="border-left: 4px solid #D4AF37; padding: 14px; background: #f9f9f9; border-radius: 4px;">
+                    <h3 style="margin-bottom: 8px;">🌾 Harvestables Query</h3>
+                    <input id="qHarvestMap" type="text" placeholder="Map" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <input id="qHarvestItem" type="text" placeholder="Item" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <button onclick="openQuery('harvestables.html', [['map','qHarvestMap'], ['item','qHarvestItem']])">Search</button>
+                    <button onclick="window.location.href='harvestables.html'" style="margin-left:8px;">Show All</button>
+                </div>
+
+                <div style="border-left: 4px solid #D4AF37; padding: 14px; background: #f9f9f9; border-radius: 4px;">
+                    <h3 style="margin-bottom: 8px;">⚔️ Creatures Query</h3>
+                    <input id="qCreatureMap" type="text" placeholder="Map" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <input id="qCreatureName" type="text" placeholder="Creature" style="width:100%; margin-bottom:6px; padding:8px;">
+                    <button onclick="openQuery('creatures.html', [['map','qCreatureMap'], ['creature','qCreatureName']])">Search</button>
+                    <button onclick="window.location.href='creatures.html'" style="margin-left:8px;">Show All</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content" style="margin-top: 30px;">
+            <h2 style="color: #D4AF37; margin-bottom: 15px;">How to Use</h2>
+            <ul style="list-style-position: inside; line-height: 1.8;">
+                <li><strong>Search:</strong> Use the filter boxes on each page to find specific maps, items, or creatures.</li>
+                <li><strong>Sort:</strong> Click column headers to sort by that field.</li>
+                <li><strong>Coordinates:</strong> Copy coordinates and use them with map scripts or manual navigation.</li>
+                <li><strong>Bookmarks:</strong> Save links to specific pages for quick reference.</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        function openQuery(page, fields) {
+            const params = new URLSearchParams();
+            for (const [key, elementId] of fields) {
+                const value = (document.getElementById(elementId).value || '').trim();
+                if (value) params.set(key, value);
+            }
+            const qs = params.toString();
+            window.location.href = qs ? (page + '?' + qs) : page;
+        }
+    </script>
+    
+    <footer>
+        <p>Lion Guild ELDB - Eternal Lands Database</p>
+        <p>Generated: 2026-04-21 15:42:42</p>
+        <p><small>Data sourced from el-db.com | Updated weekly</small></p>
+    </footer>
+</body>
+</html>
