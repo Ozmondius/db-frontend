@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>ELDB Admin -- CSV Editor</title>
+<style>
+  :root { --gold:#c9a227; --dark:#1f1408; --bg:#fafaf7; --line:#d8d2c5; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,Segoe UI,Roboto,sans-serif; margin:0;
+         background:var(--bg); color:var(--dark); }
+  header { background:var(--dark); color:var(--gold); padding:14px 22px;
+           display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:18px; }
+  header a { color:var(--gold); text-decoration:none; font-weight:600; }
+  header .spacer { flex:1; }
+  main { padding:18px 22px; max-width:1700px; margin:0 auto; }
+  h2 { color:var(--dark); border-bottom:2px solid var(--gold);
+       padding-bottom:6px; margin-top:8px; }
+  .banner { background:#fff3cd; border-left:4px solid var(--gold);
+            padding:10px 14px; margin:10px 0; border-radius:4px;
+            font-size:13px; }
+  .banner.ok { background:#dff0d8; border-left-color:#3c763d; }
+  .banner.warn { background:#fcf8e3; border-left-color:#8a6d3b; }
+  .banner.err { background:#f2dede; border-left-color:#a94442; }
+  .table-wrap { overflow-x:auto; border:1px solid var(--line);
+                border-radius:4px; max-height:65vh; overflow-y:auto;
+                background:#fff; }
+  table { width:100%; border-collapse:collapse; background:#fff;
+          font-size:12px; }
+  th, td { padding:5px 8px; border-bottom:1px solid var(--line);
+           text-align:left; vertical-align:top;
+           max-width:340px; overflow:hidden; text-overflow:ellipsis;
+           white-space:nowrap; }
+  th { background:#f1ecdf; position:sticky; top:0; z-index:5; cursor:pointer; }
+  th:hover { background:#e8e0c8; }
+  td { font-family:Segoe UI,sans-serif; }
+  td code { font-family:Consolas,monospace; font-size:11.5px; }
+  tr:hover td { background:#fff8dc; }
+  tr.dirty td { background:#fff8dc; border-left:4px solid var(--gold); }
+  tr.incomplete td { background:#fdf2f2; }
+  tr.incomplete:hover td { background:#fbe7e7; }
+  td.missing { background:#fbe2e2 !important;
+               box-shadow: inset 3px 0 0 #c0392b; color:#a23b2a;
+               font-style:italic; }
+  td.missing:before { content:'(missing) '; opacity:0.6; }
+  input[type=text], select, textarea {
+    width:100%; padding:6px 8px; border:1px solid var(--line);
+    border-radius:4px; font-size:13px; font-family:inherit; background:#fff; }
+  input.missing, select.missing, textarea.missing {
+    border-color:#c0392b; background:#fff5f5;
+    box-shadow:0 0 0 1px #c0392b; }
+  textarea { min-height:50px; resize:vertical; }
+  label { display:block; font-weight:600; margin:10px 0 4px; font-size:13px;
+          color:#555; }
+  label .col-name { font-family:monospace; color:#888; font-weight:400; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 22px; }
+  .full { grid-column:1/-1; }
+  button, .btn {
+    background:var(--gold); color:var(--dark); border:0; padding:7px 14px;
+    border-radius:4px; font-weight:600; cursor:pointer; font-size:13px;
+    text-decoration:none; display:inline-block; }
+  button:hover, .btn:hover { background:#dbb53d; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  .btn-danger { background:#c0392b; color:#fff; }
+  .btn-secondary { background:#888; color:#fff; }
+  .btn-primary-save { background:#27ae60; color:#fff; }
+  .btn-primary-save:hover { background:#2ecc71; }
+  .filters { display:flex; gap:10px; margin:12px 0; align-items:center;
+             flex-wrap:wrap; }
+  .filters input, .filters select { width:auto; min-width:160px; }
+  .toolbar { display:flex; gap:10px; align-items:center; margin:10px 0;
+             flex-wrap:wrap; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px;
+          font-size:11px; font-weight:600; background:#eee; }
+  .pill.parent { background:#d6e9c6; }
+  .pill.child { background:#bce8f1; }
+  .pill.grandchild { background:#d9edf7; }
+  .pill.great_grandchild { background:#c4d8ec; }
+  .pill.guild { background:#fcf8e3; }
+  .pill.instance { background:#f5d0c8; }
+  .pill.excluded { background:#eee; color:#888; text-decoration:line-through; }
+  .pill.miss { background:#c0392b; color:#fff; margin-left:6px; }
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,0.5);
+           display:none; align-items:center; justify-content:center;
+           z-index:100; }
+  .modal.show { display:flex; }
+  .modal-body { background:#fff; padding:24px; border-radius:6px;
+                max-width:1000px; width:94%; max-height:90vh; overflow:auto;
+                box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .stats { color:#666; font-size:12px; }
+  .dirty-marker { color:#c0392b; font-weight:700; }
+  .file-meta { font-size:11px; color:#888; margin-left:8px; }
+  .empty-state { padding:40px; text-align:center; color:#888; }
+  .hidden { display:none !important; }
+</style></head>
+<body>
+
+<header>
+  <h1>ELDB Admin</h1>
+  <a href="index.html">&larr; Dashboard</a>
+  <span class="spacer"></span>
+  <span id="modeBadge" class="pill" style="background:#888;color:#fff;">detecting...</span>
+  <span id="status" class="stats">loading...</span>
+</header>
+
+<main>
+  <div id="modeBanner" class="banner">Detecting environment...</div>
+
+  <div class="toolbar">
+    <label style="font-weight:600; margin:0;">CSV file:</label>
+    <select id="fileSel" style="min-width:340px;"></select>
+    <span id="fileMeta" class="file-meta"></span>
+    <button class="btn-secondary" onclick="reloadCsv()">Reload</button>
+    <button id="newRowBtn" onclick="openEditor(null)">+ New row</button>
+    <span class="spacer" style="flex:1"></span>
+    <button id="saveBtn" class="btn-primary-save" onclick="saveToServer()" disabled>Save to disk</button>
+    <button onclick="downloadCsv()">Download CSV</button>
+    <span class="stats" id="dirtyCount">0 unsaved edits</span>
+  </div>
+
+  <form class="filters" onsubmit="render();return false;">
+    <input type="text" id="q" placeholder="search any column">
+    <select id="kindFilter" class="hidden"><option value="">-- any kind --</option></select>
+    <select id="regionFilter" class="hidden"><option value="">-- any top_region --</option></select>
+    <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+      <input type="checkbox" id="incompleteOnly" style="width:auto;">
+      show only incomplete
+    </label>
+    <button type="button" class="btn-secondary" onclick="clearFilters()">Clear</button>
+    <span class="stats" id="rowCount"></span>
+    <span id="bigFileNote" class="stats" style="color:#a94442;"></span>
+  </form>
+
+  <h2 id="fileTitle">(no file loaded)</h2>
+  <div class="table-wrap">
+    <table id="tbl">
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="emptyState" class="empty-state hidden">No rows match the current filter. Type in the search box, or uncheck "show only incomplete".</div>
+  </div>
+</main>
+
+<!-- Edit modal -->
+<div class="modal" id="modal" onclick="if(event.target===this) closeEditor()">
+  <div class="modal-body">
+    <h2 id="editTitle">Edit</h2>
+    <form id="editForm" onsubmit="saveRow(event)">
+      <input type="hidden" id="f_orig_pk">
+      <input type="hidden" id="f_is_new">
+      <div id="formFields" class="grid"></div>
+      <p style="margin-top:18px;">
+        <button type="submit">Apply</button>
+        <button type="button" class="btn-secondary" onclick="closeEditor()">Cancel</button>
+        <button type="button" class="btn-danger" id="deleteBtn" onclick="deleteRow()"
+                style="float:right;">Delete</button>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+//  Global state
+// ============================================================================
+const STATIC_FALLBACK_FILE = 'eldb-map-classification.csv';
+const BIG_FILE_THRESHOLD = 4000;      // rows above which we render lazily
+const RENDER_CAP = 1000;              // never paint more than N rows at once
+
+let mode = 'detecting';   // 'server' | 'static' | 'detecting'
+let fileList = [];        // [{file,label,primary_key,size,modified}]
+let currentFile = null;   // filename string
+let currentMeta = null;   // entry from fileList
+let columns = [];         // header row from CSV
+let primaryKey = null;    // chosen PK column (or null = synthetic _idx)
+let rows = [];            // working copy
+let originalText = '';    // last loaded raw CSV, for dirty detection
+let dirtyCount = 0;
+let sortCol = null;
+let sortDir = 1;
+
+// ============================================================================
+//  Per-file missing-field rules
+// ============================================================================
+// Add an entry to RULES for any file that should highlight required fields.
+// The function receives a row object (header->value) and returns a Set of
+// column names that should be filled but are not.
+const RULES = {
+  'eldb-map-classification.csv': function(r) {
+    const miss = new Set();
+    const need = (c) => { if (!r[c] || !String(r[c]).trim()) miss.add(c); };
+    need('place_id'); need('place_name'); need('kind');
+    const k = (r.kind || '').trim();
+    if (k === 'excluded') return miss;
+    if (k === 'guild') return miss;
+    need('elm_file'); need('top_region');
+    if (['child','grandchild','great_grandchild','instance'].includes(k)) {
+      need('parent_place_id');
+    }
+    return miss;
+  },
+};
+function missingFields(r) {
+  const fn = RULES[currentFile];
+  return fn ? fn(r) : new Set();
+}
+
+// ============================================================================
+//  CSV parse / serialize (RFC 4180 minimal)
+// ============================================================================
+function parseCsv(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const out = [];
+  let i = 0, field = '', row = [], inQuotes = false;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }
+    if (c === '"') { inQuotes = true; i++; continue; }
+    if (c === ',') { row.push(field); field = ''; i++; continue; }
+    if (c === '\r') { i++; continue; }
+    if (c === '\n') { row.push(field); out.push(row); row=[]; field=''; i++; continue; }
+    field += c; i++;
+  }
+  if (field.length || row.length) { row.push(field); out.push(row); }
+  if (!out.length) return { header: [], rows: [] };
+  const header = out[0];
+  const data = out.slice(1)
+    .filter(r => r.some(v => v.length))
+    .map((r, idx) => {
+      const obj = Object.fromEntries(header.map((h,j) => [h, r[j] || '']));
+      obj._idx = idx;
+      return obj;
+    });
+  return { header, rows: data };
+}
+function csvCell(v) {
+  v = (v == null) ? '' : String(v);
+  if (/[",\r\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function serializeCsv(cols, rs) {
+  const lines = [cols.join(',')];
+  for (const r of rs) lines.push(cols.map(c => csvCell(r[c])).join(','));
+  return lines.join('\n') + '\n';
+}
+
+// ============================================================================
+//  Environment detection
+// ============================================================================
+async function detectMode() {
+  try {
+    const r = await fetch('/api/csv-list', { cache: 'no-store' });
+    if (r.ok) {
+      fileList = await r.json();
+      mode = 'server';
+      document.getElementById('modeBadge').textContent = 'server mode';
+      document.getElementById('modeBadge').style.background = '#27ae60';
+      const banner = document.getElementById('modeBanner');
+      banner.className = 'banner ok';
+      banner.innerHTML = '<strong>Server mode.</strong> Edits saved with the <em>Save to disk</em> button write directly to <code>Local/Guardbot/ELDB/</code>. A timestamped backup is created in <code>Admin Backups/</code> before every overwrite.';
+      document.getElementById('saveBtn').disabled = true;  // re-enabled when dirty
+      return;
+    }
+  } catch (e) { /* fall through */ }
+  mode = 'static';
+  fileList = [{
+    file: STATIC_FALLBACK_FILE, label: 'Map Classification (static)',
+    primary_key: 'place_id', size: 0, modified: ''
+  }];
+  document.getElementById('modeBadge').textContent = 'static mode';
+  document.getElementById('modeBadge').style.background = '#888';
+  const banner = document.getElementById('modeBanner');
+  banner.className = 'banner warn';
+  banner.innerHTML = '<strong>Static mode.</strong> No save endpoint. Use <em>Download CSV</em> and replace the file in <code>Local/Guardbot/ELDB/</code> manually, then re-run the build pipeline. To enable saving, run <code>Utilities\\Start-ELDB-Admin-Web.bat</code> instead of opening the file via Pages.';
+  document.getElementById('saveBtn').classList.add('hidden');
+  document.getElementById('newRowBtn').classList.add('hidden');
+}
+
+// ============================================================================
+//  File picker + load
+// ============================================================================
+function populateFilePicker() {
+  const sel = document.getElementById('fileSel');
+  sel.innerHTML = fileList.map(f => {
+    const sizeKb = f.size ? ` (${(f.size/1024).toFixed(1)} KB)` : '';
+    return `<option value="${esc(f.file)}">${esc(f.label || f.file)}${sizeKb}</option>`;
+  }).join('');
+  sel.onchange = () => loadFile(sel.value);
+}
+
+async function loadFile(name) {
+  if (dirtyCount > 0) {
+    if (!confirm('You have ' + dirtyCount + ' unsaved edit(s). Discard them and load ' + name + '?')) {
+      // revert select to the active file
+      document.getElementById('fileSel').value = currentFile;
+      return;
+    }
+  }
+  currentFile = name;
+  currentMeta = fileList.find(f => f.file === name) || null;
+  document.getElementById('fileTitle').textContent = (currentMeta && currentMeta.label) || name;
+  document.getElementById('fileMeta').textContent = currentMeta && currentMeta.modified
+    ? 'modified ' + currentMeta.modified : '';
+  primaryKey = currentMeta ? currentMeta.primary_key : null;
+  setStatus('Loading ' + name + '...');
+  try {
+    const url = (mode === 'server')
+      ? ('/api/csv?file=' + encodeURIComponent(name) + '&_=' + Date.now())
+      : (name + '?_=' + Date.now());
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    originalText = await r.text();
+    const parsed = parseCsv(originalText);
+    columns = parsed.header.slice();
+    rows = parsed.rows;
+    if (!primaryKey || !columns.includes(primaryKey)) {
+      primaryKey = columns[0] || null;
+    }
+    dirtyCount = 0;
+    sortCol = null; sortDir = 1;
+    setupClassificationFilters();
+    rebuildTableHead();
+    render();
+    setStatus(rows.length + ' rows loaded from ' + name);
+    document.getElementById('saveBtn').disabled = true;
+  } catch (e) {
+    setStatus('LOAD FAILED: ' + e.message);
+    alert('Could not load ' + name + '\n\n' + e.message);
+  }
+}
+
+function reloadCsv() { if (currentFile) loadFile(currentFile); }
+
+function setStatus(s) { document.getElementById('status').textContent = s; }
+
+function markDirty() {
+  dirtyCount++;
+  document.getElementById('dirtyCount').innerHTML =
+    '<span class="dirty-marker">' + dirtyCount + ' unsaved edits</span>';
+  if (mode === 'server') document.getElementById('saveBtn').disabled = false;
+}
+function clearDirty() {
+  dirtyCount = 0;
+  document.getElementById('dirtyCount').textContent = '0 unsaved edits';
+  document.getElementById('saveBtn').disabled = true;
+}
+
+// ============================================================================
+//  Filters specific to classification
+// ============================================================================
+function setupClassificationFilters() {
+  const isClass = currentFile === 'eldb-map-classification.csv';
+  const kindSel = document.getElementById('kindFilter');
+  const regionSel = document.getElementById('regionFilter');
+  if (!isClass) {
+    kindSel.classList.add('hidden');
+    regionSel.classList.add('hidden');
+    return;
+  }
+  kindSel.classList.remove('hidden');
+  regionSel.classList.remove('hidden');
+  const KINDS = ['parent','child','grandchild','great_grandchild','guild','instance','excluded'];
+  kindSel.innerHTML = '<option value="">-- any kind --</option>' +
+    KINDS.map(k => `<option value="${k}">${k}</option>`).join('');
+  const regions = [...new Set(rows.map(r => r.top_region).filter(Boolean))].sort();
+  regionSel.innerHTML = '<option value="">-- any top_region --</option>' +
+    regions.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  kindSel.value = '';
+  regionSel.value = '';
+}
+
+function clearFilters() {
+  document.getElementById('q').value = '';
+  document.getElementById('kindFilter').value = '';
+  document.getElementById('regionFilter').value = '';
+  document.getElementById('incompleteOnly').checked = false;
+  render();
+}
+['q','kindFilter','regionFilter','incompleteOnly'].forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener('input', render); el.addEventListener('change', render); }
+  });
+});
+
+// ============================================================================
+//  Table rendering
+// ============================================================================
+function rebuildTableHead() {
+  const tr = document.getElementById('thead-row');
+  let html = '';
+  for (const c of columns) {
+    const arrow = (sortCol === c) ? (sortDir > 0 ? ' ^' : ' v') : '';
+    html += `<th onclick="sortBy('${esc(c)}')">${esc(c)}${arrow}</th>`;
+  }
+  html += '<th></th>';
+  tr.innerHTML = html;
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir = -sortDir;
+  else { sortCol = col; sortDir = 1; }
+  rebuildTableHead();
+  render();
+}
+
+function rowKey(r) {
+  if (primaryKey && r[primaryKey]) return r[primaryKey];
+  return '_idx:' + r._idx;
+}
+
+function render() {
+  const q = document.getElementById('q').value.trim().toLowerCase();
+  const kind = document.getElementById('kindFilter').value;
+  const region = document.getElementById('regionFilter').value;
+  const incOnly = document.getElementById('incompleteOnly').checked;
+  const isClass = currentFile === 'eldb-map-classification.csv';
+
+  let view = rows;
+
+  let totalIncomplete = 0;
+  for (const r of view) if (missingFields(r).size > 0) totalIncomplete++;
+
+  view = view.filter(r => {
+    if (isClass && kind && r.kind !== kind) return false;
+    if (isClass && region && r.top_region !== region) return false;
+    if (incOnly && missingFields(r).size === 0) return false;
+    if (q) {
+      let hay = '';
+      for (const c of columns) hay += ' ' + (r[c] || '');
+      if (!hay.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (sortCol) {
+    view = view.slice().sort((a,b) => {
+      const av = (a[sortCol] || '').toString();
+      const bv = (b[sortCol] || '').toString();
+      const an = parseFloat(av), bn = parseFloat(bv);
+      if (!isNaN(an) && !isNaN(bn) && av.trim() && bv.trim()) {
+        return (an - bn) * sortDir;
+      }
+      return av.localeCompare(bv) * sortDir;
+    });
+  }
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyState');
+  const bigNote = document.getElementById('bigFileNote');
+
+  // Big-file mode: require a filter before rendering anything
+  if (rows.length > BIG_FILE_THRESHOLD && !q && !kind && !region && !incOnly) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    empty.innerHTML = '<strong>' + rows.length + ' rows</strong>. This file is large; type a search term above to render matching rows.';
+    bigNote.textContent = 'large file -- search to render';
+    document.getElementById('rowCount').textContent = '0 / ' + rows.length + ' shown';
+    return;
+  }
+  bigNote.textContent = '';
+
+  const truncated = view.length > RENDER_CAP;
+  const painted = truncated ? view.slice(0, RENDER_CAP) : view;
+
+  let html = '';
+  for (const r of painted) {
+    const miss = missingFields(r);
+    const cls = [];
+    if (r._dirty) cls.push('dirty');
+    if (miss.size > 0) cls.push('incomplete');
+    const trCls = cls.length ? ` class="${cls.join(' ')}"` : '';
+    const cellCls = (c) => miss.has(c) ? ' class="missing"' : '';
+    let tds = '';
+    for (const c of columns) {
+      const v = r[c] || '';
+      const display = (c === primaryKey || /id$/i.test(c) || /file$/i.test(c))
+        ? `<code>${esc(v)}</code>`
+        : esc(v);
+      let suffix = '';
+      if (isClass && c === 'place_name' && miss.size > 0) {
+        suffix = ` <span class="pill miss" title="missing: ${[...miss].join(', ')}">${miss.size} missing</span>`;
+      }
+      // pretty pill for kind column in classification
+      const cellInner = (isClass && c === 'kind' && v)
+        ? `<span class="pill ${esc(v)}">${esc(v)}</span>`
+        : display + suffix;
+      tds += `<td${cellCls(c)}>${cellInner}</td>`;
+    }
+    const k = encodeURIComponent(rowKey(r));
+    tds += `<td><button onclick="openEditor('${k}')">Edit</button></td>`;
+    html += `<tr${trCls}>${tds}</tr>`;
+  }
+  tbody.innerHTML = html;
+  empty.classList.toggle('hidden', view.length > 0);
+  if (view.length === 0) empty.textContent = 'No rows match the current filter.';
+
+  const incStr = (isClass && totalIncomplete > 0)
+    ? ` (<span style="color:#c0392b;font-weight:700">${totalIncomplete} incomplete</span>)`
+    : '';
+  const truncStr = truncated ? ` <span style="color:#a94442">(showing first ${RENDER_CAP})</span>` : '';
+  document.getElementById('rowCount').innerHTML =
+    view.length + ' / ' + rows.length + ' shown' + incStr + truncStr;
+}
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ============================================================================
+//  Editor
+// ============================================================================
+function findRow(key) {
+  if (key.startsWith('_idx:')) {
+    const idx = parseInt(key.slice(5), 10);
+    return rows.find(r => r._idx === idx);
+  }
+  return rows.find(r => r[primaryKey] === key);
+}
+
+function openEditor(encKey) {
+  const isNew = encKey == null;
+  const key = isNew ? null : decodeURIComponent(encKey);
+  const r = isNew
+    ? Object.fromEntries(columns.map(c => [c,'']))
+    : findRow(key);
+  if (!isNew && !r) { alert('Row not found: ' + key); return; }
+  document.getElementById('editTitle').textContent = isNew ? 'New row' : 'Edit row';
+  document.getElementById('f_orig_pk').value = isNew ? '' : key;
+  document.getElementById('f_is_new').value = isNew ? '1' : '';
+  // Build form fields dynamically from columns
+  const ff = document.getElementById('formFields');
+  let fhtml = '';
+  for (const c of columns) {
+    const long = /(notes|description|aliases|url|comment|content|details)/i.test(c);
+    const val = esc(r[c] || '');
+    const cls = long ? 'full' : '';
+    if (long) {
+      fhtml += `<div class="full"><label>${esc(c)}</label><textarea id="f_${esc(c)}">${val}</textarea></div>`;
+    } else {
+      fhtml += `<div class="${cls}"><label>${esc(c)}</label><input type="text" id="f_${esc(c)}" value="${val}"></div>`;
+    }
+  }
+  ff.innerHTML = fhtml;
+  // Wire up live missing-field highlighting if rules apply
+  if (RULES[currentFile]) {
+    for (const c of columns) {
+      const el = document.getElementById('f_' + c);
+      if (el) {
+        el.addEventListener('input', highlightMissingInForm);
+        el.addEventListener('change', highlightMissingInForm);
+      }
+    }
+    highlightMissingInForm();
+  }
+  document.getElementById('deleteBtn').style.display = isNew ? 'none' : '';
+  document.getElementById('modal').classList.add('show');
+}
+
+function highlightMissingInForm() {
+  const synth = {};
+  for (const c of columns) {
+    const el = document.getElementById('f_' + c);
+    synth[c] = el ? el.value : '';
+  }
+  const miss = missingFields(synth);
+  for (const c of columns) {
+    const el = document.getElementById('f_' + c);
+    if (!el) continue;
+    if (miss.has(c)) el.classList.add('missing');
+    else el.classList.remove('missing');
+  }
+}
+
+function closeEditor() { document.getElementById('modal').classList.remove('show'); }
+
+function saveRow(e) {
+  e.preventDefault();
+  const isNew = document.getElementById('f_is_new').value === '1';
+  const origPk = document.getElementById('f_orig_pk').value;
+  const newRow = {};
+  for (const c of columns) {
+    const el = document.getElementById('f_' + c);
+    newRow[c] = el ? el.value : '';
+  }
+  if (primaryKey) {
+    const newPk = (newRow[primaryKey] || '').trim();
+    if (!newPk) { alert(primaryKey + ' is required'); return false; }
+    if (isNew && rows.some(r => r[primaryKey] === newPk)) {
+      alert(primaryKey + ' already exists: ' + newPk); return false;
+    }
+    if (!isNew && newPk !== origPk && rows.some(r => r[primaryKey] === newPk)) {
+      alert(primaryKey + ' already exists: ' + newPk); return false;
+    }
+  }
+  if (isNew) {
+    newRow._idx = rows.length;
+    newRow._dirty = true;
+    rows.push(newRow);
+  } else {
+    const idx = primaryKey
+      ? rows.findIndex(r => r[primaryKey] === origPk)
+      : rows.findIndex(r => ('_idx:' + r._idx) === origPk);
+    if (idx < 0) { alert('Row vanished: ' + origPk); return false; }
+    newRow._idx = rows[idx]._idx;
+    newRow._dirty = true;
+    rows[idx] = newRow;
+  }
+  markDirty();
+  if (currentFile === 'eldb-map-classification.csv') {
+    setupClassificationFilters();
+  }
+  render();
+  closeEditor();
+  return false;
+}
+
+function deleteRow() {
+  const origPk = document.getElementById('f_orig_pk').value;
+  if (!origPk) return;
+  if (!confirm('Remove this row from the working copy?')) return;
+  const idx = primaryKey
+    ? rows.findIndex(r => r[primaryKey] === origPk)
+    : rows.findIndex(r => ('_idx:' + r._idx) === origPk);
+  if (idx >= 0) {
+    rows.splice(idx, 1);
+    markDirty();
+  }
+  render();
+  closeEditor();
+}
+
+// ============================================================================
+//  Save / download
+// ============================================================================
+function downloadCsv() {
+  const blob = new Blob([serializeCsv(columns, rows)], {type:'text/csv;charset=utf-8'});
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  const stem = (currentFile || 'csv').replace(/\.csv$/i, '');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = stem + '-' + ts + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+async function saveToServer() {
+  if (mode !== 'server') { alert('Save endpoint not available in static mode.'); return; }
+  if (!currentFile) return;
+  const payload = { file: currentFile, content: serializeCsv(columns, rows) };
+  setStatus('Saving ' + currentFile + '...');
+  try {
+    const r = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    setStatus('Saved ' + j.bytes + ' bytes -> ' + j.saved + (j.backup ? ' (backup: ' + j.backup + ')' : ''));
+    clearDirty();
+    // mark all rows clean visually
+    for (const r of rows) delete r._dirty;
+    // refresh fileList meta (size/modified) for current file
+    try {
+      const lr = await fetch('/api/csv-list', { cache:'no-store' });
+      if (lr.ok) {
+        fileList = await lr.json();
+        currentMeta = fileList.find(f => f.file === currentFile) || currentMeta;
+        if (currentMeta && currentMeta.modified) {
+          document.getElementById('fileMeta').textContent = 'modified ' + currentMeta.modified;
+        }
+      }
+    } catch (_) {}
+    render();
+  } catch (e) {
+    setStatus('SAVE FAILED: ' + e.message);
+    alert('Save failed:\n\n' + e.message);
+  }
+}
+
+// ============================================================================
+//  Boot
+// ============================================================================
+window.addEventListener('beforeunload', (e) => {
+  if (dirtyCount > 0) { e.preventDefault(); e.returnValue = ''; }
+});
+
+(async function boot() {
+  await detectMode();
+  populateFilePicker();
+  if (fileList.length > 0) {
+    const sel = document.getElementById('fileSel');
+    sel.value = fileList[0].file;
+    await loadFile(fileList[0].file);
+  } else {
+    setStatus('No CSV files available.');
+  }
+})();
+</script>
+</body></html>
